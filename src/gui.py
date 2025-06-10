@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
                              QTabWidget, QHBoxLayout, QSlider, QGroupBox,
                              QRadioButton, QCheckBox, QGridLayout, QSpacerItem,
-                             QFrame, QButtonGroup, QTextEdit, QSplitter)
+                             QFrame, QButtonGroup, QTextEdit, QSplitter, QSpinBox)
 from PyQt6.QtGui import QFont, QIcon, QColor, QPainter, QPainterPath, QBrush, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPoint, QRect
 from mouse_controller import start_mouse_drift, stop_mouse_drift
@@ -170,7 +170,7 @@ class GhostPointerGUI(QWidget):
 
         # Main window configuration
         self.setWindowTitle("👻 GhostPointer")
-        self.setMinimumSize(550, 500)  # Fixed minimum size
+        self.setMinimumSize(390, 400)  # Fixed minimum size
         self.is_moving = False
         self.dev_mode = False
         self.setup_ui()
@@ -249,10 +249,15 @@ class GhostPointerGUI(QWidget):
                 border-radius: 9px;
             }
             
-            QFrame#optionsFrame {
+            QFrame#optionsFrameWithBg {
                 border: 1px solid #31303A;
                 border-radius: 10px;
                 background-color: #1A1A1A;
+            }
+            
+            QFrame#transparentFrame {
+                border: none;
+                background-color: transparent;
             }
             
             QCheckBox {
@@ -301,6 +306,39 @@ class GhostPointerGUI(QWidget):
                 font-size: 11px;
                 padding: 8px;
             }
+            
+            QSpinBox {
+                background-color: #2A2A2A;
+                border: 1px solid #31303A;
+                border-radius: 4px;
+                padding: 2px 8px;
+                color: #E1E1E1;
+            }
+            
+            QSpinBox:hover {
+                border: 1px solid #6750A4;
+            }
+            
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 16px;
+                border-radius: 2px;
+                background-color: #3A3A3A;
+            }
+            
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #6750A4;
+            }
+            
+            QLabel#speedValueLabel {
+                color: #D0BCFF;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            
+            QLabel#smoothLabel {
+                color: #E1E1E1;
+                padding-right: 0px;
+            }
         """)
 
         # Main layout
@@ -344,18 +382,15 @@ class GhostPointerGUI(QWidget):
         
         # Tab 1: Mouse Movement
         self.movement_tab = QWidget()
-        self.setup_tab_content(self.movement_tab, "Movement")
+        self.setup_movement_tab(self.movement_tab)
         self.tab_widget.addTab(self.movement_tab, "Movement")
         
         # Tab 2: Click
         self.click_tab = QWidget()
-        self.setup_tab_content(self.click_tab, "Click")
+        self.setup_click_tab(self.click_tab)
         self.tab_widget.addTab(self.click_tab, "Click")
         
-        # Tab 3: Movement and Click
-        self.combined_tab = QWidget()
-        self.setup_tab_content(self.combined_tab, "Movement and Click")
-        self.tab_widget.addTab(self.combined_tab, "Movement and Click")
+        # The third tab (Movement and Click) has been removed as requested
         
         tab_container.addWidget(self.tab_widget)
         
@@ -372,10 +407,11 @@ class GhostPointerGUI(QWidget):
         
         self.setLayout(self.main_layout)
 
-    def setup_tab_content(self, tab, title):
+    def setup_movement_tab(self, tab):
+        """Setup for the movement tab with transparent options"""
         layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 8)  # Reduced bottom margin
+        layout.setSpacing(6)  # Reduced spacing
         
         # Button section (Random/Record)
         button_layout = QHBoxLayout()
@@ -402,46 +438,141 @@ class GhostPointerGUI(QWidget):
         button_layout.addWidget(random_btn, 1)  # 1 indicates proportional space
         button_layout.addWidget(record_btn, 1)
         
-        # Options frame
+        # Options section with transparent background
         options_frame = QFrame()
-        options_frame.setObjectName("optionsFrame")
+        options_frame.setObjectName("transparentFrame")  # Transparent frame
+        options_layout = QHBoxLayout(options_frame)  # Changed to HBoxLayout for a single row
+        options_layout.setContentsMargins(2, 2, 2, 2)  # Minimal padding
+        
+        # Delay option with spinbox
+        delay_label = QLabel("Delay")
+        
+        # SpinBox for delay input
+        self.delay_spinbox = QSpinBox()
+        self.delay_spinbox.setMinimum(0)
+        self.delay_spinbox.setMaximum(1000)
+        self.delay_spinbox.setValue(100)  # Default value in milliseconds
+        self.delay_spinbox.setSuffix(" ms")
+        self.delay_spinbox.setFixedWidth(100)
+        
+        # Create container for Smooth label and checkbox
+        smooth_container = QHBoxLayout()
+        
+        # Smooth label - added to the left of checkbox
+        smooth_label = QLabel("Smooth")
+        smooth_label.setObjectName("smoothLabel")
+        
+        # Checkbox without text
+        smooth_checkbox = QCheckBox("")
+        smooth_checkbox.setChecked(False)  # Default to smooth movement
+        
+        smooth_container.addWidget(smooth_label)
+        smooth_container.addWidget(smooth_checkbox)
+        smooth_container.setSpacing(2)  # Minimal spacing between label and checkbox
+        
+        # Add all options to the layout
+        options_layout.addWidget(delay_label)
+        options_layout.addWidget(self.delay_spinbox)
+        options_layout.addStretch(1)  # Stretch to push the smooth option to the right
+        options_layout.addLayout(smooth_container)
+        
+        # Speed section
+        speed_layout = QVBoxLayout()
+        speed_layout.setContentsMargins(0, 4, 0, 0)  # Reduced top margin
+        speed_layout.setSpacing(4)  # Reduced spacing
+        
+        speed_header_layout = QHBoxLayout()
+        speed_label = QLabel("Speed")
+        speed_label.setObjectName("sectionLabel")
+        
+        # Live speed value display
+        self.speed_value_label = QLabel("5")  # Default value
+        self.speed_value_label.setObjectName("speedValueLabel")
+        self.speed_value_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        
+        speed_header_layout.addWidget(speed_label)
+        speed_header_layout.addStretch()
+        speed_header_layout.addWidget(self.speed_value_label)
+        
+        # Speed slider
+        self.speed_slider = QSlider(Qt.Orientation.Horizontal)
+        self.speed_slider.setMinimum(1)
+        self.speed_slider.setMaximum(100)
+        self.speed_slider.setValue(5)
+        
+        # Connect slider value changes to update the label
+        self.speed_slider.valueChanged.connect(self.update_speed_value)
+        
+        speed_layout.addLayout(speed_header_layout)
+        speed_layout.addWidget(self.speed_slider)
+        
+        # Add all elements to the tab's main layout
+        layout.addLayout(button_layout)
+        layout.addWidget(options_frame)
+        layout.addLayout(speed_layout)
+        # No stretch to minimize space at bottom
+        
+        tab.setLayout(layout)
+
+    def setup_click_tab(self, tab):
+        """Setup for the click tab with regular options frame"""
+        layout = QVBoxLayout()
+        layout.setContentsMargins(16, 16, 16, 8)  # Reduced bottom margin
+        layout.setSpacing(12)
+        
+        # Button section (Random/Record)
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+        
+        # Button group for exclusivity
+        button_group = QButtonGroup(tab)
+        
+        random_btn = QPushButton("Random")
+        random_btn.setObjectName("optionButton")
+        random_btn.setCheckable(True)
+        random_btn.setChecked(True)
+        
+        record_btn = QPushButton("Record")
+        record_btn.setObjectName("optionButton")
+        record_btn.setCheckable(True)
+        
+        # Add buttons to the group
+        button_group.addButton(random_btn)
+        button_group.addButton(record_btn)
+        button_group.setExclusive(True)
+        
+        # Make buttons fill all available width
+        button_layout.addWidget(random_btn, 1)
+        button_layout.addWidget(record_btn, 1)
+        
+        # Options frame with background
+        options_frame = QFrame()
+        options_frame.setObjectName("optionsFrameWithBg")
         options_layout = QVBoxLayout(options_frame)
         options_layout.setContentsMargins(12, 12, 12, 12)
         options_layout.setSpacing(8)
         
-        # Add 2 options as checkboxes
+        # Add 2 options as checkboxes (original style)
         option1 = QCheckBox("Option 1")
         option2 = QCheckBox("Option 2")
         
         options_layout.addWidget(option1)
         options_layout.addWidget(option2)
         
-        # Speed section
-        speed_layout = QVBoxLayout()
-        speed_layout.setContentsMargins(0, 8, 0, 0)
-        
-        speed_label = QLabel("Speed")
-        speed_label.setObjectName("sectionLabel")
-        
-        speed_slider = QSlider(Qt.Orientation.Horizontal)
-        speed_slider.setMinimum(1)
-        speed_slider.setMaximum(10)
-        speed_slider.setValue(5)
-        
-        value_label = QLabel("5")
-        value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        speed_layout.addWidget(speed_label)
-        speed_layout.addWidget(speed_slider)
-        speed_layout.addWidget(value_label)
-        
         # Add all elements to the tab's main layout
         layout.addLayout(button_layout)
         layout.addWidget(options_frame)
-        layout.addLayout(speed_layout)
-        layout.addStretch()
+        # Removed speed section from this tab
         
         tab.setLayout(layout)
+    
+    def update_speed_value(self, value):
+        """Update the speed value label when slider changes"""
+        self.speed_value_label.setText(str(value))
+        
+        # Log in console if in dev mode
+        if self.dev_mode:
+            self.console.log(f"Speed changed to: {value}")
         
     def toggle_dev_mode(self, enabled):
         """Activate or deactivate developer mode"""
