@@ -1,10 +1,15 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
-                             QTabWidget, QHBoxLayout, QSlider, QGroupBox,
-                             QRadioButton, QCheckBox, QGridLayout, QSpacerItem,
-                             QFrame, QButtonGroup, QTextEdit, QSplitter, QSpinBox)
-from PyQt6.QtGui import QFont, QIcon, QColor, QPainter, QPainterPath, QBrush, QKeySequence, QShortcut
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPoint, QRect
-from mouse_controller import start_mouse_drift, stop_mouse_drift
+                             QTabWidget, QHBoxLayout, QTextEdit)
+from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QPainter, QPainterPath, QBrush, QColor, QIcon
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
+import os
+
+from functions.mouse import start_mouse_drift, stop_mouse_drift
+from gui.mouse import MouseTab
+from gui.click import ClickTab
+
+# Get the absolute path to the assets directory
+ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets'))
 
 # Custom Switch Button implementation
 class QSwitchButton(QWidget):
@@ -147,10 +152,27 @@ class CustomTabWidget(QTabWidget):
             (tabbar_height - self.mode_switch.height()) // 2
         )
 
-class MaterialButton(QPushButton):
-    def __init__(self, text="", parent=None):
-        super().__init__(text, parent)
-        self.setObjectName("materialButton")
+class IconButton(QPushButton):
+    def __init__(self, icon_path, parent=None):
+        super().__init__(parent)
+        self.setIcon(QIcon(icon_path))
+        self.setIconSize(QSize(90, 90))
+        self.setFixedSize(90, 90)
+        # Remove all button styling to show only the icon
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: transparent;
+            }
+            QPushButton:pressed {
+                background-color: transparent;
+            }
+        """)
+        # Make the button flat
+        self.setFlat(True)
 
 class ConsoleOutput(QTextEdit):
     def __init__(self, parent=None):
@@ -168,14 +190,39 @@ class GhostPointerGUI(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Set the application icon
+        app_icon_path = os.path.join(ASSETS_DIR, 'GhostPointer.png')
+        self.setWindowIcon(QIcon(app_icon_path))
+
         # Main window configuration
-        self.setWindowTitle("👻 GhostPointer")
-        self.setMinimumSize(390, 400)  # Fixed minimum size
+        self.setWindowTitle("GhostPointer v0.1")
+        
+        # Tamaños para los diferentes modos
+        # Tamaños para los diferentes modos
+        self.normal_size = (390, 400)
+        self.dev_mode_size = (390, 600)
+        
+        # Inicialmente configuramos tamaño fijo para modo normal
+        self.setFixedSize(*self.normal_size)  # Usar setFixedSize para bloquear redimensionamiento
+        
+        # Establecer flags de ventana para que no se pueda redimensionar
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.MSWindowsFixedSizeDialogHint)
+        
         self.is_moving = False
         self.dev_mode = False
-        self.setup_ui()
 
-    def setup_ui(self):
+        # Initialize state variables
+        self.is_moving = False
+        self.dev_mode = False
+        
+        # Define paths to icon files
+        self.play_icon_path = os.path.join(ASSETS_DIR, 'Play.png')
+        self.stop_icon_path = os.path.join(ASSETS_DIR, 'Stop.png')
+        
+        self.setup_ui()
+        self.apply_styles()
+
+    def apply_styles(self):
         # Material Design compact style
         self.setStyleSheet("""
             QWidget {
@@ -183,24 +230,6 @@ class GhostPointerGUI(QWidget):
                 color: #E1E1E1;
                 font-family: 'Segoe UI', 'Roboto', sans-serif;
                 font-size: 12px;
-            }
-            
-            #materialButton {
-                background-color: #6750A4;
-                color: white;
-                border: none;
-                border-radius: 40px;
-                font-size: 15px;
-                font-weight: 600;
-                padding: 12px;
-            }
-            
-            #materialButton:hover {
-                background-color: #7965B5;
-            }
-            
-            #materialButton:pressed {
-                background-color: #5E47A1;
             }
             
             QPushButton#optionButton {
@@ -341,6 +370,7 @@ class GhostPointerGUI(QWidget):
             }
         """)
 
+    def setup_ui(self):
         # Main layout
         self.main_layout = QVBoxLayout()
         self.main_layout.setSpacing(16)
@@ -353,9 +383,8 @@ class GhostPointerGUI(QWidget):
         button_container = QHBoxLayout()
         button_container.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        self.main_button = MaterialButton("▶")  # Play icon
-        self.main_button.setFixedSize(90, 90)
-        self.main_button.setFont(QFont("Segoe UI", 32))
+        # Create main button with play icon from PNG
+        self.main_button = IconButton(self.play_icon_path)
         self.main_button.clicked.connect(self.toggle_movement)
         
         button_container.addWidget(self.main_button, 0, Qt.AlignmentFlag.AlignCenter)
@@ -380,17 +409,13 @@ class GhostPointerGUI(QWidget):
         self.tab_widget = CustomTabWidget()
         self.tab_widget.modeToggled.connect(self.toggle_dev_mode)
         
-        # Tab 1: Mouse Movement
-        self.movement_tab = QWidget()
-        self.setup_movement_tab(self.movement_tab)
+        # Tab 1: Mouse Movement (now using MouseTab class)
+        self.movement_tab = MouseTab()
         self.tab_widget.addTab(self.movement_tab, "Movement")
         
-        # Tab 2: Click
-        self.click_tab = QWidget()
-        self.setup_click_tab(self.click_tab)
+        # Tab 2: Click (now using ClickTab class)
+        self.click_tab = ClickTab()
         self.tab_widget.addTab(self.click_tab, "Click")
-        
-        # The third tab (Movement and Click) has been removed as requested
         
         tab_container.addWidget(self.tab_widget)
         
@@ -407,221 +432,43 @@ class GhostPointerGUI(QWidget):
         
         self.setLayout(self.main_layout)
 
-    def setup_movement_tab(self, tab):
-        """Setup for the movement tab with transparent options"""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 8)  # Reduced bottom margin
-        layout.setSpacing(6)  # Reduced spacing
-        
-        # Button section (Random/Record)
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(8)
-        
-        # Button group for exclusivity
-        button_group = QButtonGroup(tab)
-        
-        random_btn = QPushButton("Random")
-        random_btn.setObjectName("optionButton")
-        random_btn.setCheckable(True)
-        random_btn.setChecked(True)
-        
-        record_btn = QPushButton("Record")
-        record_btn.setObjectName("optionButton")
-        record_btn.setCheckable(True)
-        
-        # Add buttons to the group
-        button_group.addButton(random_btn)
-        button_group.addButton(record_btn)
-        button_group.setExclusive(True)
-        
-        # Make buttons fill all available width
-        button_layout.addWidget(random_btn, 1)  # 1 indicates proportional space
-        button_layout.addWidget(record_btn, 1)
-        
-        # Options section with transparent background
-        options_frame = QFrame()
-        options_frame.setObjectName("transparentFrame")  # Transparent frame
-        options_layout = QHBoxLayout(options_frame)  # Changed to HBoxLayout for a single row
-        options_layout.setContentsMargins(2, 2, 2, 2)  # Minimal padding
-        
-        # Delay option with spinbox
-        delay_label = QLabel("Delay")
-        
-        # SpinBox for delay input
-        self.delay_spinbox = QSpinBox()
-        self.delay_spinbox.setMinimum(0)
-        self.delay_spinbox.setMaximum(1000)
-        self.delay_spinbox.setValue(100)  # Default value in milliseconds
-        self.delay_spinbox.setSuffix(" ms")
-        self.delay_spinbox.setFixedWidth(100)
-        
-        # Create container for Smooth label and checkbox
-        smooth_container = QHBoxLayout()
-        
-        # Smooth label - added to the left of checkbox
-        smooth_label = QLabel("Smooth")
-        smooth_label.setObjectName("smoothLabel")
-        
-        # Checkbox without text
-        smooth_checkbox = QCheckBox("")
-        smooth_checkbox.setChecked(False)  # Default to smooth movement
-        
-        smooth_container.addWidget(smooth_label)
-        smooth_container.addWidget(smooth_checkbox)
-        smooth_container.setSpacing(2)  # Minimal spacing between label and checkbox
-        
-        # Add all options to the layout
-        options_layout.addWidget(delay_label)
-        options_layout.addWidget(self.delay_spinbox)
-        options_layout.addStretch(1)  # Stretch to push the smooth option to the right
-        options_layout.addLayout(smooth_container)
-        
-        # Speed section
-        speed_layout = QVBoxLayout()
-        speed_layout.setContentsMargins(0, 4, 0, 0)  # Reduced top margin
-        speed_layout.setSpacing(4)  # Reduced spacing
-        
-        speed_header_layout = QHBoxLayout()
-        speed_label = QLabel("Speed")
-        speed_label.setObjectName("sectionLabel")
-        
-        # Live speed value display
-        self.speed_value_label = QLabel("5")  # Default value
-        self.speed_value_label.setObjectName("speedValueLabel")
-        self.speed_value_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-        
-        speed_header_layout.addWidget(speed_label)
-        speed_header_layout.addStretch()
-        speed_header_layout.addWidget(self.speed_value_label)
-        
-        # Speed slider
-        self.speed_slider = QSlider(Qt.Orientation.Horizontal)
-        self.speed_slider.setMinimum(1)
-        self.speed_slider.setMaximum(100)
-        self.speed_slider.setValue(5)
-        
-        # Connect slider value changes to update the label
-        self.speed_slider.valueChanged.connect(self.update_speed_value)
-        
-        speed_layout.addLayout(speed_header_layout)
-        speed_layout.addWidget(self.speed_slider)
-        
-        # Add all elements to the tab's main layout
-        layout.addLayout(button_layout)
-        layout.addWidget(options_frame)
-        layout.addLayout(speed_layout)
-        # No stretch to minimize space at bottom
-        
-        tab.setLayout(layout)
-
-    def setup_click_tab(self, tab):
-        """Setup for the click tab with regular options frame"""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 8)  # Reduced bottom margin
-        layout.setSpacing(12)
-        
-        # Button section (Random/Record)
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(8)
-        
-        # Button group for exclusivity
-        button_group = QButtonGroup(tab)
-        
-        random_btn = QPushButton("Random")
-        random_btn.setObjectName("optionButton")
-        random_btn.setCheckable(True)
-        random_btn.setChecked(True)
-        
-        record_btn = QPushButton("Record")
-        record_btn.setObjectName("optionButton")
-        record_btn.setCheckable(True)
-        
-        # Add buttons to the group
-        button_group.addButton(random_btn)
-        button_group.addButton(record_btn)
-        button_group.setExclusive(True)
-        
-        # Make buttons fill all available width
-        button_layout.addWidget(random_btn, 1)
-        button_layout.addWidget(record_btn, 1)
-        
-        # Options frame with background
-        options_frame = QFrame()
-        options_frame.setObjectName("optionsFrameWithBg")
-        options_layout = QVBoxLayout(options_frame)
-        options_layout.setContentsMargins(12, 12, 12, 12)
-        options_layout.setSpacing(8)
-        
-        # Add 2 options as checkboxes (original style)
-        option1 = QCheckBox("Option 1")
-        option2 = QCheckBox("Option 2")
-        
-        options_layout.addWidget(option1)
-        options_layout.addWidget(option2)
-        
-        # Add all elements to the tab's main layout
-        layout.addLayout(button_layout)
-        layout.addWidget(options_frame)
-        # Removed speed section from this tab
-        
-        tab.setLayout(layout)
-    
-    def update_speed_value(self, value):
-        """Update the speed value label when slider changes"""
-        self.speed_value_label.setText(str(value))
-        
-        # Log in console if in dev mode
-        if self.dev_mode:
-            self.console.log(f"Speed changed to: {value}")
-        
     def toggle_dev_mode(self, enabled):
         """Activate or deactivate developer mode"""
         self.dev_mode = enabled
         self.console.setVisible(enabled)
         
+        # Ajustar el tamaño de la ventana según el modo
         if enabled:
+            self.setFixedSize(*self.dev_mode_size)
             self.console.log("Developer mode activated.")
         else:
+            self.setFixedSize(*self.normal_size)
             self.console.log("Developer mode deactivated.")
-        
-        # Adjust window size if necessary
-        self.adjustSize()
 
     def toggle_movement(self):
         if not self.is_moving:
-            # Starting movement
-            start_mouse_drift()
-            # Change to STOP icon (square)
-            self.main_button.setText("■")
-            self.main_button.setStyleSheet("""
-                background-color: #F44336; 
-                color: white; 
-                border: none; 
-                border-radius: 45px;
-                font-size: 32px;
-                font-weight: 600;
-                padding: 12px;
-            """)
+            # Get current settings from mouse tab
+            settings = self.movement_tab.get_current_settings()
+            
+            # Starting movement with parameters
+            start_mouse_drift(
+                speed=settings['speed'], 
+                delay=settings['delay']
+            )
+            
+            # Change to STOP icon
+            self.main_button.setIcon(QIcon(self.stop_icon_path))
             # Update shortcut text
             self.shortcut_label.setText("Ctrl+Space to stop")
             
             # Log in console
             if self.dev_mode:
-                self.console.log("Mouse movement started.")
+                self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
         else:
             # Stopping movement
             stop_mouse_drift()
-            # Change to PLAY icon (triangle)
-            self.main_button.setText("▶")
-            self.main_button.setStyleSheet("""
-                background-color: #6750A4; 
-                color: white; 
-                border: none; 
-                border-radius: 45px;
-                font-size: 32px;
-                font-weight: 600;
-                padding: 12px;
-            """)
+            # Change to PLAY icon
+            self.main_button.setIcon(QIcon(self.play_icon_path))
             # Update shortcut text
             self.shortcut_label.setText("Ctrl+Space to start")
             
