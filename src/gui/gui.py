@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
 import os
 
 from functions.mouse import start_mouse_drift, stop_mouse_drift
+from functions.click import start_auto_click, stop_auto_click
 from gui.mouse import MouseTab
 from gui.click import ClickTab
 
@@ -446,35 +447,70 @@ class GhostPointerGUI(QWidget):
             self.console.log("Developer mode deactivated.")
 
     def toggle_movement(self):
+        """Start or stop the current action based on the active tab"""
         if not self.is_moving:
-            # Get current settings from mouse tab
-            settings = self.movement_tab.get_current_settings()
+            # Determine which tab is active
+            current_tab_index = self.tab_widget.currentIndex()
             
-            # Starting movement with parameters
-            start_mouse_drift(
-                speed=settings['speed'], 
-                delay=settings['delay']
-            )
+            if current_tab_index == 0:  # Movement tab
+                # Get current settings from mouse tab
+                settings = self.movement_tab.get_current_settings()
+                
+                # Starting movement with parameters
+                start_mouse_drift(
+                    speed=settings['speed'], 
+                    delay=settings['delay']
+                )
+                
+                # Log in console
+                if self.dev_mode:
+                    self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
+            
+            else:  # Click tab
+                # Get current settings from click tab
+                settings = self.click_tab.get_current_settings()
+                
+                # Start auto-clicking with parameters
+                start_auto_click(
+                    interval=settings['interval'],
+                    click_method=settings['click_type'],
+                    position=settings['position'],
+                    jitter=settings['jitter']
+                )
+                
+                # Log in console
+                if self.dev_mode:
+                    self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s")
             
             # Change to STOP icon
             self.main_button.setIcon(QIcon(self.stop_icon_path))
             # Update shortcut text
             self.shortcut_label.setText("Ctrl+Space to stop")
             
-            # Log in console
-            if self.dev_mode:
-                self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
         else:
-            # Stopping movement
-            stop_mouse_drift()
+            # Determine which tab is active
+            current_tab_index = self.tab_widget.currentIndex()
+            
+            if current_tab_index == 0:  # Movement tab
+                # Stopping movement
+                stop_mouse_drift()
+                
+                # Log in console
+                if self.dev_mode:
+                    self.console.log("Mouse movement stopped.")
+            
+            else:  # Click tab
+                # Stopping auto-click
+                stop_auto_click()
+                
+                # Log in console
+                if self.dev_mode:
+                    self.console.log("Auto-click stopped.")
+            
             # Change to PLAY icon
             self.main_button.setIcon(QIcon(self.play_icon_path))
             # Update shortcut text
             self.shortcut_label.setText("Ctrl+Space to start")
-            
-            # Log in console
-            if self.dev_mode:
-                self.console.log("Mouse movement stopped.")
         
         # Change state
         self.is_moving = not self.is_moving
