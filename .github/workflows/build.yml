@@ -26,8 +26,7 @@ jobs:
     
     - name: Build executable
       run: |
-        cd src
-        pyinstaller --onefile --windowed --name=GhostPointer main.py
+        pyinstaller --onefile --windowed --name=GhostPointer --add-data "assets;assets" main.py
     
     - name: Upload executable
       uses: actions/upload-artifact@v4

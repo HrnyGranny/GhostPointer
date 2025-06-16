@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QButtonGroup, QFrame,
                              QSlider, QDoubleSpinBox, QCheckBox)
 from PyQt6.QtCore import Qt
-from functions.click import update_interval, update_click_type, update_position, update_jitter
+from src.functions.click import update_interval, update_click_type, update_position, update_jitter
 
 class ClickTab(QWidget):
     def __init__(self, parent=None):

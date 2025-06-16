@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
                              QHBoxLayout, QSlider, QFrame, QButtonGroup,
                              QCheckBox, QSpinBox)
 from PyQt6.QtCore import Qt
-from functions.mouse import update_speed, update_delay
+from src.functions.mouse import update_speed, update_delay
 
 class MouseTab(QWidget):
     def __init__(self, parent=None):

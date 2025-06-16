@@ -4,13 +4,11 @@ from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QPainter, QPainterPath, 
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
 import os
 
-from functions.mouse import start_mouse_drift, stop_mouse_drift
-from functions.click import start_auto_click, stop_auto_click
-from gui.mouse import MouseTab
-from gui.click import ClickTab
-
-# Get the absolute path to the assets directory
-ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'assets'))
+from src.functions.mouse import start_mouse_drift, stop_mouse_drift
+from src.functions.click import start_auto_click, stop_auto_click
+from src.gui.mouse import MouseTab
+from src.gui.click import ClickTab
+from src.gui.assets import get_icon
 
 # Custom Switch Button implementation
 class QSwitchButton(QWidget):
@@ -190,15 +188,7 @@ class ConsoleOutput(QTextEdit):
 class GhostPointerGUI(QWidget):
     def __init__(self):
         super().__init__()
-
-        # Set the application icon
-        app_icon_path = os.path.join(ASSETS_DIR, 'GhostPointer.png')
-        self.setWindowIcon(QIcon(app_icon_path))
-
-        # Main window configuration
-        self.setWindowTitle("GhostPointer v0.1")
         
-        # Tamaños para los diferentes modos
         # Tamaños para los diferentes modos
         self.normal_size = (390, 400)
         self.dev_mode_size = (390, 600)
@@ -217,8 +207,8 @@ class GhostPointerGUI(QWidget):
         self.dev_mode = False
         
         # Define paths to icon files
-        self.play_icon_path = os.path.join(ASSETS_DIR, 'Play.png')
-        self.stop_icon_path = os.path.join(ASSETS_DIR, 'Stop.png')
+        self.play_icon_path = get_icon('Play.png')
+        self.stop_icon_path = get_icon('Stop.png')
         
         self.setup_ui()
         self.apply_styles()
