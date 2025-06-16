@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QButtonGroup, QFrame,
-                             QSpinBox, QCheckBox)
+                             QSpinBox, QCheckBox, QRadioButton)
 from PyQt6.QtCore import Qt
 from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit
 
@@ -10,165 +10,238 @@ class ClickTab(QWidget):
         self.setup_ui()
         
     def setup_ui(self):
-        """Setup for the click tab with compact buttons"""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 8)
-        layout.setSpacing(10)
+        """Setup for the click tab with new layout structure"""
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(16, 8, 16, 8)
+        main_layout.setSpacing(12)
         
-        # -- Click Type Section with small buttons --
-        type_section = QVBoxLayout()
-        type_section.setSpacing(4)
+        # --- ROW 1: Click Type and Position ---
+        top_row_layout = QHBoxLayout()
+        
+        # Left side - Click Type
+        type_container = QVBoxLayout()
         type_label = QLabel("Click Type")
         type_label.setObjectName("sectionLabel")
-        type_section.addWidget(type_label)
+        type_container.setSpacing(5)
         
-        # Button grid for click types (2x2)
-        type_grid = QHBoxLayout()
-        type_grid.setSpacing(6)
+        type_buttons = QHBoxLayout()
+        type_buttons.setSpacing(6)
         
-        # Create button group
+        # Create button group for click type
         self.type_group = QButtonGroup(self)
         self.type_group.setExclusive(True)
         
-        # Create small buttons
+        # Create Left/Right buttons
         left_btn = QPushButton("Left")
         right_btn = QPushButton("Right")
-        double_btn = QPushButton("Double")
-        middle_btn = QPushButton("Middle")
         
-        # Set compact style
-        for btn in [left_btn, right_btn, double_btn, middle_btn]:
+        for btn in [left_btn, right_btn]:
             btn.setObjectName("compactButton")
             btn.setCheckable(True)
-            btn.setFixedHeight(28)  # Reduced height
+            btn.setFixedHeight(28)
         
-        # Default selection
         left_btn.setChecked(True)
         
-        # Add buttons to group with IDs
         self.type_group.addButton(left_btn, 1)
         self.type_group.addButton(right_btn, 2)
-        self.type_group.addButton(double_btn, 3)
-        self.type_group.addButton(middle_btn, 4)
-        
-        # Connect group to function
         self.type_group.buttonClicked.connect(self.update_click_type)
         
-        # Add buttons to grid
-        type_grid.addWidget(left_btn, 1)
-        type_grid.addWidget(right_btn, 1)
-        type_grid.addWidget(double_btn, 1)
-        type_grid.addWidget(middle_btn, 1)
+        type_buttons.addWidget(left_btn)
+        type_buttons.addWidget(right_btn)
+        type_buttons.addStretch()
         
-        type_section.addLayout(type_grid)
+        type_container.addWidget(type_label)
+        type_container.addLayout(type_buttons)
         
-        # -- Position Section --
-        position_section = QVBoxLayout()
-        position_section.setSpacing(4)
+        # Right side - Click Position
+        position_container = QVBoxLayout()
         position_label = QLabel("Click Position")
         position_label.setObjectName("sectionLabel")
-        position_section.addWidget(position_label)
+        position_container.setSpacing(5)
         
-        position_row = QHBoxLayout()
-        position_row.setSpacing(6)
+        position_buttons = QHBoxLayout()
+        position_buttons.setSpacing(6)
         
-        # Create button group
+        # Create button group for position
         self.position_group = QButtonGroup(self)
         self.position_group.setExclusive(True)
         
-        # Create small buttons
         current_btn = QPushButton("Current")
         random_btn = QPushButton("Random")
         
-        # Set compact style
         for btn in [current_btn, random_btn]:
             btn.setObjectName("compactButton")
             btn.setCheckable(True)
-            btn.setFixedHeight(28)  # Reduced height
+            btn.setFixedHeight(28)
         
-        # Default selection
         current_btn.setChecked(True)
         
-        # Add to group
         self.position_group.addButton(current_btn, 1)
         self.position_group.addButton(random_btn, 2)
-        
-        # Connect
         self.position_group.buttonClicked.connect(self.update_position)
         
-        # Add jitter option in same row to save space
-        jitter_container = QHBoxLayout()
+        position_buttons.addWidget(current_btn)
+        position_buttons.addWidget(random_btn)
+        position_buttons.addStretch()
+        
+        position_container.addWidget(position_label)
+        position_container.addLayout(position_buttons)
+        
+        # Add both sections to the top row with a separator in between
+        top_row_layout.addLayout(type_container, 1)
+        top_row_layout.addSpacing(20)  # Separation between sections
+        top_row_layout.addLayout(position_container, 1)
+        
+        # --- ROW 2: Delay and Jitter ---
+        middle_frame = QFrame()
+        middle_frame.setObjectName("transparentFrame")
+        middle_layout = QHBoxLayout(middle_frame)
+        middle_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Delay controls
+        delay_container = QVBoxLayout()
+        delay_label = QLabel("Delay")
+        delay_label.setObjectName("sectionLabel")
+        
+        delay_inputs = QHBoxLayout()
+        
+        # Minutes input - SAME WIDTH (90px)
+        self.delay_min_spinbox = QSpinBox()
+        self.delay_min_spinbox.setMinimum(0)
+        self.delay_min_spinbox.setMaximum(60)
+        self.delay_min_spinbox.setValue(0)
+        self.delay_min_spinbox.setSuffix(" min")
+        self.delay_min_spinbox.setFixedWidth(90)
+        self.delay_min_spinbox.valueChanged.connect(self.update_delay_values)
+        
+        # Seconds input - SAME WIDTH (90px)
+        self.delay_sec_spinbox = QSpinBox()
+        self.delay_sec_spinbox.setMinimum(0)
+        self.delay_sec_spinbox.setMaximum(59)
+        self.delay_sec_spinbox.setValue(1)
+        self.delay_sec_spinbox.setSuffix(" sec")
+        self.delay_sec_spinbox.setFixedWidth(90)
+        self.delay_sec_spinbox.valueChanged.connect(self.update_delay_values)
+        
+        delay_inputs.addWidget(self.delay_min_spinbox)
+        delay_inputs.addWidget(self.delay_sec_spinbox)
+        delay_inputs.addStretch()
+        
+        delay_container.addWidget(delay_label)
+        delay_container.addLayout(delay_inputs)
+        
+        # Jitter checkbox on the right
+        jitter_container = QVBoxLayout()
+        jitter_container.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        
+        # Spacer to align with inputs
+        jitter_spacer = QVBoxLayout()
+        jitter_spacer.addStretch()
+        
+        jitter_check_layout = QHBoxLayout()
         jitter_label = QLabel("Add Jitter")
-        jitter_label.setObjectName("smallLabel")
+        jitter_label.setObjectName("sectionLabel")
         
         self.jitter_checkbox = QCheckBox()
         self.jitter_checkbox.setChecked(False)
         self.jitter_checkbox.stateChanged.connect(self.update_jitter)
         
-        jitter_container.addWidget(jitter_label)
-        jitter_container.addWidget(self.jitter_checkbox)
-        jitter_container.setSpacing(2)
+        jitter_check_layout.addWidget(jitter_label)
+        jitter_check_layout.addWidget(self.jitter_checkbox)
+        jitter_check_layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         
-        # Add buttons and jitter to row
-        position_row.addWidget(current_btn, 1)
-        position_row.addWidget(random_btn, 1)
-        position_row.addStretch(1)
-        position_row.addLayout(jitter_container)
+        jitter_container.addLayout(jitter_spacer)
+        jitter_container.addLayout(jitter_check_layout)
         
-        position_section.addLayout(position_row)
+        middle_layout.addLayout(delay_container, 3)
+        middle_layout.addLayout(jitter_container, 1)
         
-        # -- Time Controls Section (replaces Interval Section) --
-        time_controls_frame = QFrame()
-        time_controls_frame.setObjectName("transparentFrame")
-        time_controls_layout = QHBoxLayout(time_controls_frame)
-        time_controls_layout.setContentsMargins(0, 8, 0, 0)  # Add some top margin
+        # --- ROW 3: Limit with Radio Buttons and Single Box ---
+        bottom_frame = QFrame()
+        bottom_frame.setObjectName("transparentFrame")
+        bottom_layout = QVBoxLayout(bottom_frame)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        bottom_layout.setSpacing(5)
         
-        # Delay between clicks
-        delay_container = QHBoxLayout()
-        delay_label = QLabel("Delay")
+        # Main limit container
+        limit_main_container = QHBoxLayout()
         
-        # SpinBox for delay input
-        self.delay_spinbox = QSpinBox()
-        self.delay_spinbox.setMinimum(50)
-        self.delay_spinbox.setMaximum(5000)
-        self.delay_spinbox.setValue(500)  # Default value: 500 ms
-        self.delay_spinbox.setSuffix(" ms")
-        self.delay_spinbox.setFixedWidth(100)
-        self.delay_spinbox.valueChanged.connect(self.update_click_delay)
-        
-        delay_container.addWidget(delay_label)
-        delay_container.addWidget(self.delay_spinbox)
-        
-        # Total time limit
-        limit_container = QHBoxLayout()
+        # Left side - Limit label and radio buttons
+        limit_left_container = QVBoxLayout()
         limit_label = QLabel("Limit")
+        limit_label.setObjectName("sectionLabel")
         
-        # SpinBox for time limit input
-        self.limit_spinbox = QSpinBox()
-        self.limit_spinbox.setMinimum(0)
-        self.limit_spinbox.setMaximum(3600)
-        self.limit_spinbox.setValue(0)  # Default value: 0 seconds (no limit)
-        self.limit_spinbox.setSuffix(" sec")
-        self.limit_spinbox.setFixedWidth(100)
-        self.limit_spinbox.valueChanged.connect(self.update_click_limit)
+        # Radio button group in horizontal layout
+        radio_layout = QHBoxLayout()
+        radio_layout.setSpacing(14)  # Spacing between radio buttons
         
-        limit_container.addWidget(limit_label)
-        limit_container.addWidget(self.limit_spinbox)
+        # Create radio buttons and group
+        self.limit_group = QButtonGroup(self)
         
-        # Add both controls to the same row with a spacer between them
-        time_controls_layout.addLayout(delay_container)
-        time_controls_layout.addStretch(1)
-        time_controls_layout.addLayout(limit_container)
+        clicks_radio = QRadioButton("Clicks")
+        time_radio = QRadioButton("Time")
+        infinite_radio = QRadioButton("Infinite")
         
-        # Add all sections to main layout
-        layout.addLayout(type_section)
-        layout.addLayout(position_section)
-        layout.addWidget(time_controls_frame)
-        layout.addStretch()
+        clicks_radio.setChecked(True)  # Default selection
         
-        self.setLayout(layout)
+        self.limit_group.addButton(clicks_radio, 1)
+        self.limit_group.addButton(time_radio, 2)
+        self.limit_group.addButton(infinite_radio, 3)
         
-        # Add custom styles for compact buttons
+        self.limit_group.buttonClicked.connect(self.update_limit_type)
+        
+        # Add radio buttons to layout
+        radio_layout.addWidget(clicks_radio)
+        radio_layout.addWidget(time_radio)
+        radio_layout.addWidget(infinite_radio)
+        radio_layout.addStretch()
+        
+        # Add label and radio buttons to left container
+        limit_left_container.addWidget(limit_label)
+        limit_left_container.addLayout(radio_layout)
+        
+        # Right side - Common input field - MODIFICADO PARA ALINEAR CON RADIO BUTTONS
+        limit_right_container = QVBoxLayout()
+        
+        # Añadir un espaciador para compensar la altura del label "Limit"
+        limit_right_container.addSpacing(16) 
+        
+        # Single common input for both clicks and time
+        input_layout = QHBoxLayout()
+        
+        self.limit_value_spinbox = QSpinBox()
+        self.limit_value_spinbox.setMinimum(1)
+        self.limit_value_spinbox.setMaximum(99999)
+        self.limit_value_spinbox.setValue(100)
+        self.limit_value_spinbox.setSuffix(" clicks")  # Default to clicks
+        self.limit_value_spinbox.setFixedWidth(110)
+        self.limit_value_spinbox.valueChanged.connect(self.update_limit_values)
+        
+        # Add input to layout
+        input_layout.addWidget(self.limit_value_spinbox)
+        input_layout.addStretch()
+        
+        # Add input layout to right container
+        limit_right_container.addLayout(input_layout)
+        limit_right_container.addStretch()
+        
+        # Add both containers to main limit container
+        limit_main_container.addLayout(limit_left_container, 3)
+        limit_main_container.addSpacing(22) 
+        limit_main_container.addLayout(limit_right_container, 2)
+        
+        # Add limit container to bottom layout
+        bottom_layout.addLayout(limit_main_container)
+        
+        # Add all rows to the main layout
+        main_layout.addLayout(top_row_layout)
+        main_layout.addWidget(middle_frame)
+        main_layout.addWidget(bottom_frame)
+        main_layout.addStretch()
+        
+        self.setLayout(main_layout)
+        
+        # Add custom styles
         self.setStyleSheet("""
             QPushButton#compactButton {
                 background-color: #1E1E1E;
@@ -177,7 +250,7 @@ class ClickTab(QWidget):
                 border-radius: 6px;
                 padding: 2px 4px;
                 font-size: 11px;
-                min-width: 40px;
+                min-width: 60px;
             }
             
             QPushButton#compactButton:hover {
@@ -191,10 +264,66 @@ class ClickTab(QWidget):
                 color: #D0BCFF;
             }
             
-            QLabel#smallLabel {
+            QRadioButton {
+                color: #E1E1E1;
                 font-size: 11px;
             }
+            
+            QRadioButton::indicator {
+                width: 12px;
+                height: 12px;
+                border-radius: 6px;
+            }
+            
+            QRadioButton::indicator:unchecked {
+                background-color: #2A2A2A;
+                border: 1px solid #3A3A3A;
+            }
+            
+            QRadioButton::indicator:checked {
+                background-color: #6750A4;
+                border: 1px solid #D0BCFF;
+            }
+            
+            QSpinBox:disabled {
+                background-color: #1A1A1A;
+                color: #5A5A5A;
+                border: 1px solid #2A2A2A;
+            }
+            
+            QLabel#sectionLabel {
+                color: #E1E1E1;
+                font-weight: 500;
+            }
         """)
+    
+    def update_limit_type(self, button):
+        """Update limit type and configure the shared spinbox accordingly"""
+        button_id = self.limit_group.id(button)
+        
+        if button_id == 1:  # Clicks
+            self.limit_value_spinbox.setEnabled(True)
+            self.limit_value_spinbox.setMinimum(1)
+            self.limit_value_spinbox.setMaximum(99999)
+            self.limit_value_spinbox.setSuffix(" clicks")
+            # Keep current value if it's in range
+            if self.limit_value_spinbox.value() < 1:
+                self.limit_value_spinbox.setValue(100)  # Default for clicks
+            self.update_limit_values()
+            
+        elif button_id == 2:  # Time
+            self.limit_value_spinbox.setEnabled(True)
+            self.limit_value_spinbox.setMinimum(1)
+            self.limit_value_spinbox.setMaximum(3600)
+            self.limit_value_spinbox.setSuffix(" sec")
+            # Keep current value if it's in range
+            if self.limit_value_spinbox.value() > 3600:
+                self.limit_value_spinbox.setValue(60)  # Default for time
+            self.update_limit_values()
+            
+        elif button_id == 3:  # Infinite
+            self.limit_value_spinbox.setEnabled(False)
+            update_limit(0, 0)  # 0 means infinite for both clicks and time
     
     def update_click_type(self, button):
         """Update the click type based on button selection"""
@@ -203,10 +332,6 @@ class ClickTab(QWidget):
             update_click_type("left")
         elif button_id == 2:
             update_click_type("right")
-        elif button_id == 3:
-            update_click_type("double")
-        elif button_id == 4:
-            update_click_type("middle")
     
     def update_position(self, button):
         """Update the click position based on button selection"""
@@ -216,13 +341,25 @@ class ClickTab(QWidget):
         elif button_id == 2:
             update_position("random")
     
-    def update_click_delay(self, value):
-        """Update the delay between clicks"""
-        update_delay(value)
+    def update_delay_values(self):
+        """Calculate total delay in milliseconds from minutes and seconds"""
+        minutes = self.delay_min_spinbox.value()
+        seconds = self.delay_sec_spinbox.value()
+        
+        # Convert to milliseconds (ensure at least 50ms)
+        total_ms = max((minutes * 60 + seconds) * 1000, 50)
+        update_delay(total_ms)
     
-    def update_click_limit(self, value):
-        """Update the total clicking time limit"""
-        update_limit(value)
+    def update_limit_values(self):
+        """Update limit values based on current selection"""
+        limit_type = self.limit_group.checkedId()
+        value = self.limit_value_spinbox.value()
+        
+        if limit_type == 1:  # Clicks
+            update_limit(value, 0)  # Use clicks, no time limit
+        elif limit_type == 2:  # Time
+            update_limit(0, value)  # No click limit, use time limit
+        # Infinite is handled in update_limit_type
     
     def update_jitter(self, state):
         """Enable or disable jitter based on checkbox state"""
@@ -232,25 +369,43 @@ class ClickTab(QWidget):
         """Return current click settings"""
         # Determine click type
         button_id = self.type_group.checkedId()
-        if button_id == 1:
-            click_type = "left"
-        elif button_id == 2:
-            click_type = "right"
-        elif button_id == 3:
-            click_type = "double"
-        else:
-            click_type = "middle"
+        click_type = "left" if button_id == 1 else "right"
             
         # Determine position type
         position_button = self.position_group.checkedButton()
         position_id = self.position_group.id(position_button)
         position = "current" if position_id == 1 else "random"
         
+        # Calculate delay
+        minutes = self.delay_min_spinbox.value()
+        seconds = self.delay_sec_spinbox.value()
+        delay_ms = (minutes * 60 + seconds) * 1000
+        
+        # Determine limit based on selection
+        limit_type = self.limit_group.checkedId()
+        value = self.limit_value_spinbox.value()
+        
+        if limit_type == 1:  # Clicks
+            clicks = value
+            time_limit = 0
+            is_infinite = False
+        elif limit_type == 2:  # Time
+            clicks = 0
+            time_limit = value
+            is_infinite = False
+        else:  # Infinite
+            clicks = 0
+            time_limit = 0
+            is_infinite = True
+        
         return {
-            'interval': self.delay_spinbox.value() / 1000.0,  # Convert ms to seconds for compatibility
+            'interval': delay_ms / 1000.0,  # Convert ms to seconds for compatibility
             'click_type': click_type,
             'position': position,
             'jitter': self.jitter_checkbox.isChecked(),
-            'delay': self.delay_spinbox.value(),
-            'limit': self.limit_spinbox.value()
+            'delay': delay_ms,
+            'limit_clicks': clicks,
+            'limit_time': time_limit,
+            'infinite': is_infinite,
+            'limit_type': ['clicks', 'time', 'infinite'][limit_type - 1]
         }

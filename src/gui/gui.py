@@ -456,7 +456,7 @@ class GhostPointerGUI(QWidget):
                 if self.dev_mode:
                     self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
             
-            else:  
+            else:  # Click tab
                 # Get current settings from click tab
                 settings = self.click_tab.get_current_settings()
                 
@@ -465,14 +465,20 @@ class GhostPointerGUI(QWidget):
                     interval=settings['interval'],
                     click_method=settings['click_type'],
                     position=settings['position'],
-                    jitter=settings['jitter'],
-                    delay=settings['delay'],
-                    limit=settings['limit']
+                    jitter=settings['jitter']
                 )
-                                
+                
                 # Log in console
                 if self.dev_mode:
-                    self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s")
+                    limit_info = ""
+                    if settings['infinite']:
+                        limit_info = " (infinite)"
+                    elif settings['limit_clicks'] > 0:
+                        limit_info = f" (limit: {settings['limit_clicks']} clicks)"
+                    elif settings['limit_time'] > 0:
+                        limit_info = f" (limit: {settings['limit_time']} seconds)"
+                    
+                    self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s{limit_info}")
             
             # Change to STOP icon
             self.main_button.setIcon(QIcon(self.stop_icon_path))
