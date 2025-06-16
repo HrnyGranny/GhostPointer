@@ -32,4 +32,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: GhostPointer
-        path: src/dist/GhostPointer.exe
+        path: dist/GhostPointer.exe
