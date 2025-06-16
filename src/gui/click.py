@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QButtonGroup, QFrame,
-                             QSlider, QDoubleSpinBox, QCheckBox)
+                             QSpinBox, QCheckBox)
 from PyQt6.QtCore import Qt
-from src.functions.click import update_interval, update_click_type, update_position, update_jitter
+from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit
 
 class ClickTab(QWidget):
     def __init__(self, parent=None):
@@ -40,7 +40,7 @@ class ClickTab(QWidget):
         for btn in [left_btn, right_btn, double_btn, middle_btn]:
             btn.setObjectName("compactButton")
             btn.setCheckable(True)
-            btn.setFixedHeight(28)  # Altura reducida
+            btn.setFixedHeight(28)  # Reduced height
         
         # Default selection
         left_btn.setChecked(True)
@@ -84,7 +84,7 @@ class ClickTab(QWidget):
         for btn in [current_btn, random_btn]:
             btn.setObjectName("compactButton")
             btn.setCheckable(True)
-            btn.setFixedHeight(28)  # Altura reducida
+            btn.setFixedHeight(28)  # Reduced height
         
         # Default selection
         current_btn.setChecked(True)
@@ -109,66 +109,61 @@ class ClickTab(QWidget):
         jitter_container.addWidget(self.jitter_checkbox)
         jitter_container.setSpacing(2)
         
-        # Add buttons and jitter to row - CORRECCIÓN: argumento de addStretch debe ser int, no float
+        # Add buttons and jitter to row
         position_row.addWidget(current_btn, 1)
         position_row.addWidget(random_btn, 1)
-        position_row.addStretch(1)  # Cambiado de 0.5 a 1
+        position_row.addStretch(1)
         position_row.addLayout(jitter_container)
         
         position_section.addLayout(position_row)
         
-        # -- Interval Section --
-        interval_frame = QFrame()
-        interval_frame.setObjectName("transparentFrame")
-        interval_layout = QVBoxLayout(interval_frame)
-        interval_layout.setContentsMargins(0, 0, 0, 0)
-        interval_layout.setSpacing(4)
+        # -- Time Controls Section (replaces Interval Section) --
+        time_controls_frame = QFrame()
+        time_controls_frame.setObjectName("transparentFrame")
+        time_controls_layout = QHBoxLayout(time_controls_frame)
+        time_controls_layout.setContentsMargins(0, 8, 0, 0)  # Add some top margin
         
-        interval_header = QHBoxLayout()
-        interval_label = QLabel("Click Interval")
-        interval_label.setObjectName("sectionLabel")
+        # Delay between clicks
+        delay_container = QHBoxLayout()
+        delay_label = QLabel("Delay")
         
-        # Display for interval value
-        self.interval_value_label = QLabel("1.0 sec")
-        self.interval_value_label.setObjectName("valueLabel")
-        self.interval_value_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        # SpinBox for delay input
+        self.delay_spinbox = QSpinBox()
+        self.delay_spinbox.setMinimum(50)
+        self.delay_spinbox.setMaximum(5000)
+        self.delay_spinbox.setValue(500)  # Default value: 500 ms
+        self.delay_spinbox.setSuffix(" ms")
+        self.delay_spinbox.setFixedWidth(100)
+        self.delay_spinbox.valueChanged.connect(self.update_click_delay)
         
-        interval_header.addWidget(interval_label)
-        interval_header.addStretch()
-        interval_header.addWidget(self.interval_value_label)
+        delay_container.addWidget(delay_label)
+        delay_container.addWidget(self.delay_spinbox)
         
-        # Controls for interval
-        controls_layout = QHBoxLayout()
-        controls_layout.setSpacing(8)
+        # Total time limit
+        limit_container = QHBoxLayout()
+        limit_label = QLabel("Limit")
         
-        # SpinBox for precise interval input
-        self.interval_spinbox = QDoubleSpinBox()
-        self.interval_spinbox.setMinimum(0.1)
-        self.interval_spinbox.setMaximum(10.0)
-        self.interval_spinbox.setValue(1.0)
-        self.interval_spinbox.setSingleStep(0.1)
-        self.interval_spinbox.setSuffix(" sec")
-        self.interval_spinbox.setFixedWidth(80)
-        self.interval_spinbox.valueChanged.connect(self.update_interval_value)
+        # SpinBox for time limit input
+        self.limit_spinbox = QSpinBox()
+        self.limit_spinbox.setMinimum(0)
+        self.limit_spinbox.setMaximum(3600)
+        self.limit_spinbox.setValue(0)  # Default value: 0 seconds (no limit)
+        self.limit_spinbox.setSuffix(" sec")
+        self.limit_spinbox.setFixedWidth(100)
+        self.limit_spinbox.valueChanged.connect(self.update_click_limit)
         
-        # Slider for quick interval adjustment
-        self.interval_slider = QSlider(Qt.Orientation.Horizontal)
-        self.interval_slider.setMinimum(1)  # 0.1 seconds
-        self.interval_slider.setMaximum(100)  # 10 seconds
-        self.interval_slider.setValue(10)  # 1.0 seconds
-        self.interval_slider.setTickPosition(QSlider.TickPosition.NoTicks)
-        self.interval_slider.valueChanged.connect(self.sync_slider_to_spinbox)
+        limit_container.addWidget(limit_label)
+        limit_container.addWidget(self.limit_spinbox)
         
-        controls_layout.addWidget(self.interval_spinbox)
-        controls_layout.addWidget(self.interval_slider, 1)
-        
-        interval_layout.addLayout(interval_header)
-        interval_layout.addLayout(controls_layout)
+        # Add both controls to the same row with a spacer between them
+        time_controls_layout.addLayout(delay_container)
+        time_controls_layout.addStretch(1)
+        time_controls_layout.addLayout(limit_container)
         
         # Add all sections to main layout
         layout.addLayout(type_section)
         layout.addLayout(position_section)
-        layout.addWidget(interval_frame)
+        layout.addWidget(time_controls_frame)
         layout.addStretch()
         
         self.setLayout(layout)
@@ -221,31 +216,13 @@ class ClickTab(QWidget):
         elif button_id == 2:
             update_position("random")
     
-    def update_interval_value(self, value):
-        """Update the interval value and synchronize slider"""
-        self.interval_value_label.setText(f"{value:.1f} sec")
-        
-        # Update slider without triggering its valueChanged signal
-        self.interval_slider.blockSignals(True)
-        self.interval_slider.setValue(int(value * 10))
-        self.interval_slider.blockSignals(False)
-        
-        # Update the clicking function
-        update_interval(value)
+    def update_click_delay(self, value):
+        """Update the delay between clicks"""
+        update_delay(value)
     
-    def sync_slider_to_spinbox(self, value):
-        """Convert slider value to interval and update spinbox"""
-        # Convert slider value (1-100) to seconds (0.1-10.0)
-        interval = value / 10.0
-        
-        # Update spinbox without triggering its valueChanged signal
-        self.interval_spinbox.blockSignals(True)
-        self.interval_spinbox.setValue(interval)
-        self.interval_spinbox.blockSignals(False)
-        
-        # Update the display label and clicking function
-        self.interval_value_label.setText(f"{interval:.1f} sec")
-        update_interval(interval)
+    def update_click_limit(self, value):
+        """Update the total clicking time limit"""
+        update_limit(value)
     
     def update_jitter(self, state):
         """Enable or disable jitter based on checkbox state"""
@@ -265,12 +242,15 @@ class ClickTab(QWidget):
             click_type = "middle"
             
         # Determine position type
-        button_id = self.position_group.id(button)
-        position = "current" if button_id == 1 else "random"
+        position_button = self.position_group.checkedButton()
+        position_id = self.position_group.id(position_button)
+        position = "current" if position_id == 1 else "random"
         
         return {
-            'interval': self.interval_spinbox.value(),
+            'interval': self.delay_spinbox.value() / 1000.0,  # Convert ms to seconds for compatibility
             'click_type': click_type,
             'position': position,
-            'jitter': self.jitter_checkbox.isChecked()
+            'jitter': self.jitter_checkbox.isChecked(),
+            'delay': self.delay_spinbox.value(),
+            'limit': self.limit_spinbox.value()
         }

@@ -456,7 +456,7 @@ class GhostPointerGUI(QWidget):
                 if self.dev_mode:
                     self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
             
-            else:  # Click tab
+            else:  
                 # Get current settings from click tab
                 settings = self.click_tab.get_current_settings()
                 
@@ -465,9 +465,11 @@ class GhostPointerGUI(QWidget):
                     interval=settings['interval'],
                     click_method=settings['click_type'],
                     position=settings['position'],
-                    jitter=settings['jitter']
+                    jitter=settings['jitter'],
+                    delay=settings['delay'],
+                    limit=settings['limit']
                 )
-                
+                                
                 # Log in console
                 if self.dev_mode:
                     self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s")

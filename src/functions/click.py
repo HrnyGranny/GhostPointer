@@ -118,3 +118,15 @@ def update_jitter(enabled):
     global jitter_enabled
     jitter_enabled = enabled
     logging.info(f"Jitter {'enabled' if enabled else 'disabled'}")
+
+def update_delay(value):
+    """Update the delay between clicks in milliseconds"""
+    # Implementation depends on your backend functionality
+    global click_delay
+    click_delay = value
+
+def update_limit(value):
+    """Update the total time limit for clicking in seconds"""
+    # Implementation depends on your backend functionality
+    global click_limit
+    click_limit = value

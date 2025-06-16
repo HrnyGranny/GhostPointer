@@ -44,7 +44,7 @@ class MouseTab(QWidget):
         options_frame = QFrame()
         options_frame.setObjectName("transparentFrame")  # Transparent frame
         options_layout = QHBoxLayout(options_frame)  # Changed to HBoxLayout for a single row
-        options_layout.setContentsMargins(2, 2, 2, 2)  # Minimal padding
+        options_layout.setContentsMargins(2, 16, 2, 2)  # Minimal padding
         
         # Delay option with spinbox
         delay_label = QLabel("Delay")
@@ -81,9 +81,8 @@ class MouseTab(QWidget):
         
         # Speed section
         speed_layout = QVBoxLayout()
-        speed_layout.setContentsMargins(0, 4, 0, 0)  # Reduced top margin
-        speed_layout.setSpacing(4)  # Reduced spacing
-        
+        speed_layout.setContentsMargins(0, 9, 0, 0)  # Reduced top margin
+
         speed_header_layout = QHBoxLayout()
         speed_label = QLabel("Speed")
         speed_label.setObjectName("sectionLabel")
@@ -114,6 +113,8 @@ class MouseTab(QWidget):
         layout.addWidget(options_frame)
         layout.addLayout(speed_layout)
         # No stretch to minimize space at bottom
+
+        layout.addStretch(1)
         
         self.setLayout(layout)
     
