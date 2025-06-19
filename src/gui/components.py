@@ -164,3 +164,25 @@ class IconButton(QPushButton):
         """)
         # Make the button flat
         self.setFlat(True)
+
+class HelpButton(QPushButton):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(24, 24)
+        self.setText("?")
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #31303A;
+                color: #D0BCFF;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #6750A4;
+                color: white;
+            }
+            QPushButton:pressed {
+                background-color: #4F3B8B;
+            }
+        """)

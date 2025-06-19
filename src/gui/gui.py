@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTabWidget)
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout)
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIcon
 from PyQt6.QtCore import Qt, pyqtSignal
 import os
@@ -8,7 +8,7 @@ from src.functions.click import start_auto_click, stop_auto_click
 from src.gui.mouse import MouseTab
 from src.gui.click import ClickTab
 from src.gui.assets import get_icon
-from src.gui.components import CustomTabWidget, IconButton
+from src.gui.components import CustomTabWidget, IconButton, HelpButton
 from src.gui.console import ConsoleOutput
 from src.gui.styles import get_app_styles
 
@@ -39,6 +39,12 @@ class GhostPointerGUI(QWidget):
         
         self.setup_ui()
         self.apply_styles()
+        
+        # Añadir botón de ayuda con posición absoluta
+        self.help_button = HelpButton(self)
+        # Posicionar en la esquina superior derecha (16px de margen)
+        self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
+        self.help_button.clicked.connect(self.show_help)
 
     def apply_styles(self):
         # Aplicar estilos desde el módulo de estilos
@@ -96,7 +102,8 @@ class GhostPointerGUI(QWidget):
         # Developer console (hidden by default)
         self.console = ConsoleOutput()
         self.console.setVisible(False)
-        self.console.show_banner()
+        self.console.log("Developer console initialized.")
+        self.console.log("Use this console to debug and receive event information.")
         
         # Add elements to the main layout
         self.main_layout.addLayout(top_layout)
@@ -104,6 +111,12 @@ class GhostPointerGUI(QWidget):
         self.main_layout.addWidget(self.console)
         
         self.setLayout(self.main_layout)
+
+    def show_help(self):
+        """Muestra el diálogo de ayuda"""
+        # Implementaremos esto más adelante
+        if self.dev_mode:
+            self.console.log("Help button clicked - feature coming soon")
 
     def toggle_dev_mode(self, enabled):
         """Activate or deactivate developer mode"""
@@ -113,10 +126,20 @@ class GhostPointerGUI(QWidget):
         # Ajustar el tamaño de la ventana según el modo
         if enabled:
             self.setFixedSize(*self.dev_mode_size)
-            self.console.log("Developer mode activated.")
+            # Reposicionar el botón de ayuda al cambiar el tamaño
+            self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
+            self.console.show_banner()
         else:
             self.setFixedSize(*self.normal_size)
+            # Reposicionar el botón de ayuda al cambiar el tamaño
+            self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
             self.console.log("Developer mode deactivated.")
+
+    def resizeEvent(self, event):
+        """Se ejecuta cuando se cambia el tamaño de la ventana"""
+        super().resizeEvent(event)
+        # Asegurarse de que el botón de ayuda permanezca en la esquina superior derecha
+        self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
 
     def toggle_movement(self):
         """Start or stop the current action based on the active tab"""
