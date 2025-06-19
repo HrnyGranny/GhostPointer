@@ -1,12 +1,14 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QButtonGroup, QFrame,
                              QSpinBox, QCheckBox, QRadioButton)
-from PyQt6.QtCore import Qt
-from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit
+from PyQt6.QtCore import Qt, QPoint
+from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit, set_specific_position
+from src.functions.position_selector import PositionSelectorOverlay
 
 class ClickTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.selected_position = None
         self.setup_ui()
         
     def setup_ui(self):
@@ -67,9 +69,9 @@ class ClickTab(QWidget):
         self.position_group.setExclusive(True)
         
         current_btn = QPushButton("Current")
-        random_btn = QPushButton("Random")
+        select_btn = QPushButton("Select")
         
-        for btn in [current_btn, random_btn]:
+        for btn in [current_btn, select_btn]:
             btn.setObjectName("compactButton")
             btn.setCheckable(True)
             btn.setFixedHeight(28)
@@ -77,11 +79,11 @@ class ClickTab(QWidget):
         current_btn.setChecked(True)
         
         self.position_group.addButton(current_btn, 1)
-        self.position_group.addButton(random_btn, 2)
+        self.position_group.addButton(select_btn, 2)
         self.position_group.buttonClicked.connect(self.update_position)
         
         position_buttons.addWidget(current_btn)
-        position_buttons.addWidget(random_btn)
+        position_buttons.addWidget(select_btn)
         position_buttons.addStretch()
         
         position_container.addWidget(position_label)
@@ -296,7 +298,7 @@ class ClickTab(QWidget):
                 font-weight: 500;
             }
         """)
-    
+
     def update_limit_type(self, button):
         """Update limit type and configure the shared spinbox accordingly"""
         button_id = self.limit_group.id(button)
@@ -339,7 +341,31 @@ class ClickTab(QWidget):
         if button_id == 1:
             update_position("current")
         elif button_id == 2:
-            update_position("random")
+            self.show_position_selector()
+    
+    def show_position_selector(self):
+        """Muestra el selector de posición en pantalla"""
+        self.overlay = PositionSelectorOverlay()
+        self.overlay.positionSelected.connect(self.on_position_selected)
+        self.overlay.selectionCanceled.connect(self.on_selection_canceled)
+        self.overlay.show()
+    
+    def on_selection_canceled(self):
+        """Maneja la cancelación de la selección de posición"""
+        # Volver al botón "Current"
+        current_button = self.position_group.button(1)  # El ID 1 corresponde a "Current"
+        if current_button:
+            current_button.setChecked(True)
+            update_position("current")
+    
+    def on_position_selected(self, point):
+        """Procesa la posición seleccionada"""
+        x, y = point.x(), point.y()
+        self.selected_position = (x, y)
+        
+        # Actualizar la posición en la lógica de clics
+        update_position("specific")
+        set_specific_position(x, y)
     
     def update_delay_values(self):
         """Calculate total delay in milliseconds from minutes and seconds"""
@@ -374,8 +400,12 @@ class ClickTab(QWidget):
         # Determine position type
         position_button = self.position_group.checkedButton()
         position_id = self.position_group.id(position_button)
-        position = "current" if position_id == 1 else "random"
         
+        if position_id == 1:
+            position = "current"
+        else:  # position_id == 2
+            position = "specific" if self.selected_position else "current"
+            
         # Calculate delay
         minutes = self.delay_min_spinbox.value()
         seconds = self.delay_sec_spinbox.value()
@@ -407,5 +437,6 @@ class ClickTab(QWidget):
             'limit_clicks': clicks,
             'limit_time': time_limit,
             'infinite': is_infinite,
-            'limit_type': ['clicks', 'time', 'infinite'][limit_type - 1]
+            'limit_type': ['clicks', 'time', 'infinite'][limit_type - 1],
+            'specific_position': self.selected_position
         }

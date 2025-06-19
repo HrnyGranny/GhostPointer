@@ -102,8 +102,6 @@ class GhostPointerGUI(QWidget):
         # Developer console (hidden by default)
         self.console = ConsoleOutput()
         self.console.setVisible(False)
-        self.console.log("Developer console initialized.")
-        self.console.log("Use this console to debug and receive event information.")
         
         # Add elements to the main layout
         self.main_layout.addLayout(top_layout)

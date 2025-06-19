@@ -17,7 +17,7 @@ clicking = False
 thread = None
 click_interval = 1.0  # Default interval in seconds (1 click per second)
 click_type = "left"  # Default click type: "left", "right"
-click_position = "current"  # Default position: "current" or "random"
+click_position = "current"  # Default position: "current" o "specific"
 jitter_enabled = False  # Small random movement before clicking
 jitter_amount = 5  # Pixels of random jitter
 
@@ -27,18 +27,21 @@ click_limit_time = 0  # 0 means no time limit (infinite)
 click_counter = 0  # Counter for number of clicks performed
 start_time = None  # Start time for time-based limits
 
+# Variables para la posición específica
+specific_position = None  # Tupla (x, y) para una posición específica
+
 def _click_loop():
     """Main function to perform automatic clicks"""
     global clicking, click_interval, click_type, click_position, jitter_enabled, jitter_amount
-    global click_limit_count, click_limit_time, click_counter, start_time
+    global click_limit_count, click_limit_time, click_counter, start_time, specific_position
     
     # Reset counters
     click_counter = 0
     start_time = datetime.now()
     
-    # Get screen size for random positions
-    screen_width, screen_height = pyautogui.size()
-    margin = 50  # Safety margin to avoid edges
+    # Si hay una posición específica configurada, mover el cursor allí al inicio
+    if click_position == "specific" and specific_position:
+        pyautogui.moveTo(specific_position[0], specific_position[1], duration=0.3)
     
     while clicking:
         try:
@@ -63,11 +66,9 @@ def _click_loop():
                 jitter_y = random.randint(-jitter_amount, jitter_amount)
                 pyautogui.moveRel(jitter_x, jitter_y, duration=0.1)
             
-            # If random position is selected, move to a random screen position
-            if click_position == "random":
-                target_x = random.randint(margin, screen_width - margin)
-                target_y = random.randint(margin, screen_height - margin)
-                pyautogui.moveTo(target_x, target_y, duration=0.2)
+            # Si se ha configurado una posición específica, asegurarse de que el cursor esté en ella
+            if click_position == "specific" and specific_position:
+                pyautogui.moveTo(specific_position[0], specific_position[1], duration=0.2)
             
             # Perform the click based on the selected type
             if click_type == "left":
@@ -176,3 +177,9 @@ def update_limit(clicks, time_sec=0):
         logging.info(f"Time limit updated: {time_sec} seconds")
     else:
         logging.info("Limits removed: infinite clicking")
+
+def set_specific_position(x, y):
+    """Establecer una posición específica para los clics"""
+    global specific_position
+    specific_position = (x, y)
+    logging.info(f"Posición específica establecida: ({x}, {y})")
