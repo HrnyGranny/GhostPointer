@@ -22,10 +22,10 @@ class ConsoleOutput(QTextEdit):
         
         # Banner compacto con colores HTML
         banner = f"""<pre style="color:#6750A4; font-family:'Consolas', 'Courier New'">
-       ╭───────── <span style="color:#D0BCFF; font-weight:bold">Ghost Pointer</span> ──────────╮
-       │ <span style="color:#B0B0B0">v{version}</span>          <span style="color:#B0B0B0">{current_date}</span> │
-       │ <span style="color:#E1E1E1">Developer mode</span>       <span style="color:#B0B0B0">@HrnyGranny</span> │
-       ╰──────────────────────────────────╯</pre>
+        ╭────────── <span style="color:#D0BCFF; font-weight:bold">Ghost Pointer</span> ──────────╮
+        │ <span style="color:#B0B0B0">v{version}</span>          <span style="color:#B0B0B0">{current_date}</span>  │
+        │ <span style="color:#E1E1E1">Developer mode</span>       <span style="color:#B0B0B0">@HrnyGranny</span>  │
+        ╰───────────────────────────────────╯</pre>
     """
         
         # Limpiar consola primero

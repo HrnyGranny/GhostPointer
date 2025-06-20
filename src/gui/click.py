@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QButtonGroup, QFrame,
                              QSpinBox, QCheckBox, QRadioButton)
 from PyQt6.QtCore import Qt, QPoint
-from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit, set_specific_position
+from src.functions.click import update_click_type, update_position, update_jitter, update_delay, update_limit, set_specific_position, needs_position_selection
 from src.functions.position_selector import PositionSelectorOverlay
 
 class ClickTab(QWidget):
@@ -340,8 +340,10 @@ class ClickTab(QWidget):
         button_id = self.position_group.id(button)
         if button_id == 1:
             update_position("current")
+            self.selected_position = None
         elif button_id == 2:
-            self.show_position_selector()
+            # Just mark that we want to use select mode, don't show selector yet
+            update_position("select")
     
     def show_position_selector(self):
         """Muestra el selector de posición en pantalla"""
@@ -352,17 +354,15 @@ class ClickTab(QWidget):
     
     def on_selection_canceled(self):
         """Maneja la cancelación de la selección de posición"""
-        # Volver al botón "Current"
-        current_button = self.position_group.button(1)  # El ID 1 corresponde a "Current"
-        if current_button:
-            current_button.setChecked(True)
-            update_position("current")
+        # Keep in "Select" mode, don't switch back to "Current"
+        pass
     
     def on_position_selected(self, point):
         """Procesa la posición seleccionada"""
         x, y = point.x(), point.y()
         self.selected_position = (x, y)
         
+        print(f"Position selected: ({x}, {y})")
         # Actualizar la posición en la lógica de clics
         update_position("specific")
         set_specific_position(x, y)
@@ -391,6 +391,11 @@ class ClickTab(QWidget):
         """Enable or disable jitter based on checkbox state"""
         update_jitter(state == Qt.CheckState.Checked.value)
     
+    def needs_position_selection(self):
+        """Check if position selection is needed"""
+        position_id = self.position_group.checkedId()
+        return position_id == 2 and self.selected_position is None
+    
     def get_current_settings(self):
         """Return current click settings"""
         # Determine click type
@@ -404,7 +409,7 @@ class ClickTab(QWidget):
         if position_id == 1:
             position = "current"
         else:  # position_id == 2
-            position = "specific" if self.selected_position else "current"
+            position = "specific" if self.selected_position else "select"
             
         # Calculate delay
         minutes = self.delay_min_spinbox.value()

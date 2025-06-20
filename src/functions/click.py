@@ -17,7 +17,7 @@ clicking = False
 thread = None
 click_interval = 1.0  # Default interval in seconds (1 click per second)
 click_type = "left"  # Default click type: "left", "right"
-click_position = "current"  # Default position: "current" o "specific"
+click_position = "current"  # Default position: "current", "select", or "specific"
 jitter_enabled = False  # Small random movement before clicking
 jitter_amount = 5  # Pixels of random jitter
 
@@ -30,6 +30,9 @@ start_time = None  # Start time for time-based limits
 # Variables para la posición específica
 specific_position = None  # Tupla (x, y) para una posición específica
 
+# Flag to indicate if position selection is needed
+position_selection_needed = False
+
 def _click_loop():
     """Main function to perform automatic clicks"""
     global clicking, click_interval, click_type, click_position, jitter_enabled, jitter_amount
@@ -39,10 +42,11 @@ def _click_loop():
     click_counter = 0
     start_time = datetime.now()
     
-    # Si hay una posición específica configurada, mover el cursor allí al inicio
+    # Debug log
     if click_position == "specific" and specific_position:
-        pyautogui.moveTo(specific_position[0], specific_position[1], duration=0.3)
+        print(f"DEBUG - Starting clicking at specific position: {specific_position}")
     
+    # Main click loop
     while clicking:
         try:
             # Check for click limit if set
@@ -59,24 +63,45 @@ def _click_loop():
                     stop_auto_click()
                     break
             
-            # If jitter is enabled, add small random movement
-            if jitter_enabled:
-                current_x, current_y = pyautogui.position()
-                jitter_x = random.randint(-jitter_amount, jitter_amount)
-                jitter_y = random.randint(-jitter_amount, jitter_amount)
-                pyautogui.moveRel(jitter_x, jitter_y, duration=0.1)
-            
-            # Si se ha configurado una posición específica, asegurarse de que el cursor esté en ella
+            # Handle different position modes
             if click_position == "specific" and specific_position:
-                pyautogui.moveTo(specific_position[0], specific_position[1], duration=0.2)
+                # Get the exact coordinates from specific_position
+                target_x, target_y = specific_position
+                
+                # Move directly to the specific position (with animation as you prefer)
+                pyautogui.moveTo(x=target_x, y=target_y, duration=0.3)
+                
+                # Apply jitter if enabled (AFTER moving to specific position)
+                if jitter_enabled:
+                    jitter_x = random.randint(-jitter_amount, jitter_amount)
+                    jitter_y = random.randint(-jitter_amount, jitter_amount)
+                    # Use moveRel for jitter to ensure it's relative to the specific position
+                    pyautogui.moveRel(xOffset=jitter_x, yOffset=jitter_y, duration=0.1)
+                
+                # Get the final click position (after jitter if applied)
+                click_x, click_y = pyautogui.position()
+                
+                # Perform the click at the CURRENT position
+                if click_type == "left":
+                    pyautogui.click(x=click_x, y=click_y, button='left')
+                else:
+                    pyautogui.click(x=click_x, y=click_y, button='right')
             
-            # Perform the click based on the selected type
-            if click_type == "left":
-                pyautogui.click()
-                logging.debug("Left click performed")
-            elif click_type == "right":
-                pyautogui.rightClick()
-                logging.debug("Right click performed")
+            else:  # current position mode
+                # Get current position
+                current_x, current_y = pyautogui.position()
+                
+                # Apply jitter if enabled
+                if jitter_enabled:
+                    jitter_x = random.randint(-jitter_amount, jitter_amount)
+                    jitter_y = random.randint(-jitter_amount, jitter_amount)
+                    pyautogui.moveRel(xOffset=jitter_x, yOffset=jitter_y, duration=0.1)
+                
+                # Click at current position (after jitter)
+                if click_type == "left":
+                    pyautogui.click(button='left')
+                else:
+                    pyautogui.click(button='right')
             
             # Increment click counter
             click_counter += 1
@@ -86,11 +111,13 @@ def _click_loop():
             
         except Exception as e:
             logging.error(f"Error during automatic clicking: {e}")
+            print(f"ERROR: {e}")
             time.sleep(1)  # Wait a bit before retrying
 
 def start_auto_click(interval=None, click_method=None, position=None, jitter=None):
     """Start automatic clicking with specified parameters"""
     global clicking, thread, click_interval, click_type, click_position, jitter_enabled
+    global position_selection_needed
     
     # Update parameters if provided
     if interval is not None:
@@ -101,6 +128,16 @@ def start_auto_click(interval=None, click_method=None, position=None, jitter=Non
         click_position = position
     if jitter is not None:
         jitter_enabled = jitter
+    
+    # Check if we need to select a position first
+    if click_position == "select":
+        if specific_position is None:
+            position_selection_needed = True
+            logging.info("Position selection needed before starting auto-click")
+            return None
+        else:
+            # If position was previously selected, use it as specific position
+            click_position = "specific"
     
     if clicking:
         return thread  # Already clicking
@@ -140,8 +177,15 @@ def update_click_type(new_type):
 
 def update_position(new_position):
     """Update the click position mode while running"""
-    global click_position
+    global click_position, position_selection_needed
+    
     click_position = new_position
+    
+    # If changing to select mode, we'll need to select a position
+    # But don't trigger selection yet - just mark that it's needed
+    if new_position == "select":
+        position_selection_needed = specific_position is None
+    
     logging.info(f"Click position updated to {click_position}")
 
 def update_jitter(enabled):
@@ -180,6 +224,17 @@ def update_limit(clicks, time_sec=0):
 
 def set_specific_position(x, y):
     """Establecer una posición específica para los clics"""
-    global specific_position
-    specific_position = (x, y)
+    global specific_position, position_selection_needed
+    # Ensure we're using exact screen coordinates
+    specific_position = (int(x), int(y))
+    position_selection_needed = False
     logging.info(f"Posición específica establecida: ({x}, {y})")
+
+def needs_position_selection():
+    """Check if position selection is needed"""
+    return click_position == "select" and specific_position is None
+
+def reset_position_selection_state():
+    """Reset the position selection state after cancellation"""
+    global position_selection_needed
+    position_selection_needed = False

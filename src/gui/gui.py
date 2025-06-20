@@ -28,6 +28,7 @@ class GhostPointerGUI(QWidget):
         
         self.is_moving = False
         self.dev_mode = False
+        self.position_selection_pending = False
 
         # Initialize state variables
         self.is_moving = False
@@ -138,6 +139,35 @@ class GhostPointerGUI(QWidget):
         super().resizeEvent(event)
         # Asegurarse de que el botón de ayuda permanezca en la esquina superior derecha
         self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
+        
+    def handle_position_selection_complete(self):
+        """Handle completion of position selection"""
+        # Position has been selected, now we can start auto-clicking
+        settings = self.click_tab.get_current_settings()
+        start_auto_click(
+            interval=settings['interval'],
+            click_method=settings['click_type'],
+            position=settings['position'],
+            jitter=settings['jitter']
+        )
+        
+        # Log in console
+        if self.dev_mode:
+            limit_info = ""
+            if settings['infinite']:
+                limit_info = " (infinite)"
+            elif settings['limit_clicks'] > 0:
+                limit_info = f" (limit: {settings['limit_clicks']} clicks)"
+            elif settings['limit_time'] > 0:
+                limit_info = f" (limit: {settings['limit_time']} seconds)"
+            
+            self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s{limit_info}")
+        
+        # Change state and update UI
+        self.is_moving = True
+        self.position_selection_pending = False
+        self.main_button.setIcon(QIcon(self.stop_icon_path))
+        self.shortcut_label.setText("Ctrl+Space to stop")
 
     def toggle_movement(self):
         """Start or stop the current action based on the active tab"""
@@ -158,10 +188,31 @@ class GhostPointerGUI(QWidget):
                 # Log in console
                 if self.dev_mode:
                     self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
+                
+                # Change to STOP icon
+                self.main_button.setIcon(QIcon(self.stop_icon_path))
+                # Update shortcut text
+                self.shortcut_label.setText("Ctrl+Space to stop")
+                # Change state
+                self.is_moving = True
             
             else:  # Click tab
                 # Get current settings from click tab
                 settings = self.click_tab.get_current_settings()
+                
+                # Check if we need to select a position first
+                if settings['position'] == 'select' and settings['specific_position'] is None:
+                    # Mark that we have a pending position selection
+                    self.position_selection_pending = True
+                    
+                    # Show position selector
+                    self.click_tab.show_position_selector()
+                    
+                    # Connect the position selected signal to continue with auto-click
+                    self.click_tab.overlay.positionSelected.connect(lambda: self.handle_position_selection_complete())
+                    
+                    # Don't change state yet - wait for position selection
+                    return
                 
                 # Start auto-clicking with parameters
                 start_auto_click(
@@ -182,11 +233,13 @@ class GhostPointerGUI(QWidget):
                         limit_info = f" (limit: {settings['limit_time']} seconds)"
                     
                     self.console.log(f"Auto-click started: {settings['click_type']} clicks every {settings['interval']}s{limit_info}")
-            
-            # Change to STOP icon
-            self.main_button.setIcon(QIcon(self.stop_icon_path))
-            # Update shortcut text
-            self.shortcut_label.setText("Ctrl+Space to stop")
+                
+                # Change to STOP icon
+                self.main_button.setIcon(QIcon(self.stop_icon_path))
+                # Update shortcut text
+                self.shortcut_label.setText("Ctrl+Space to stop")
+                # Change state
+                self.is_moving = True
             
         else:
             # Determine which tab is active
@@ -212,6 +265,5 @@ class GhostPointerGUI(QWidget):
             self.main_button.setIcon(QIcon(self.play_icon_path))
             # Update shortcut text
             self.shortcut_label.setText("Ctrl+Space to start")
-        
-        # Change state
-        self.is_moving = not self.is_moving
+            # Change state
+            self.is_moving = False
