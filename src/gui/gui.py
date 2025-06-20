@@ -201,7 +201,8 @@ class GhostPointerGUI(QWidget):
                 settings = self.click_tab.get_current_settings()
                 
                 # Check if we need to select a position first
-                if settings['position'] == 'select' and settings['specific_position'] is None:
+                # Always prompt for position selection if in "select" mode, regardless of whether we have a previous position
+                if settings['position'] == 'select' or (settings['position'] == 'specific' and settings['specific_position'] is None):
                     # Mark that we have a pending position selection
                     self.position_selection_pending = True
                     
@@ -256,6 +257,10 @@ class GhostPointerGUI(QWidget):
             else:  # Click tab
                 # Stopping auto-click
                 stop_auto_click()
+                
+                # Reset the selected position in the click tab if using "Select" mode
+                if self.click_tab.position_group.checkedId() == 2:  # If "Select" is checked
+                    self.click_tab.selected_position = None
                 
                 # Log in console
                 if self.dev_mode:

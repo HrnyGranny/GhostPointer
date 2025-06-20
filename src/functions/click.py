@@ -33,29 +33,31 @@ specific_position = None  # Tupla (x, y) para una posición específica
 # Flag to indicate if position selection is needed
 position_selection_needed = False
 
+# Add a new variable to store the captured PyAutoGUI position
+pyautogui_position = None
+
 def _click_loop():
     """Main function to perform automatic clicks"""
     global clicking, click_interval, click_type, click_position, jitter_enabled, jitter_amount
-    global click_limit_count, click_limit_time, click_counter, start_time, specific_position
+    global click_limit_count, click_limit_time, click_counter, start_time, pyautogui_position
     
     # Reset counters
     click_counter = 0
     start_time = datetime.now()
     
-    # Debug log
-    if click_position == "specific" and specific_position:
-        print(f"DEBUG - Starting clicking at specific position: {specific_position}")
+    # Debug output
+    if click_position == "specific" and pyautogui_position:
+        print(f"DEBUG - Starting clicking at PyAutoGUI position: {pyautogui_position}")
     
     # Main click loop
     while clicking:
         try:
-            # Check for click limit if set
+            # Check for limits
             if click_limit_count > 0 and click_counter >= click_limit_count:
                 logging.info(f"Click limit reached: {click_limit_count} clicks")
                 stop_auto_click()
                 break
                 
-            # Check for time limit if set
             if click_limit_time > 0:
                 elapsed_seconds = (datetime.now() - start_time).total_seconds()
                 if elapsed_seconds >= click_limit_time:
@@ -63,61 +65,64 @@ def _click_loop():
                     stop_auto_click()
                     break
             
-            # Handle different position modes
-            if click_position == "specific" and specific_position:
-                # Get the exact coordinates from specific_position
-                target_x, target_y = specific_position
+            # Handle position modes
+            if click_position == "specific" and pyautogui_position:
+                x, y = pyautogui_position
                 
-                # Move directly to the specific position (with animation as you prefer)
-                pyautogui.moveTo(x=target_x, y=target_y, duration=0.3)
+                # Check if we need to move back to the specific position
+                current_x, current_y = pyautogui.position()
+                distance = ((current_x - x)**2 + (current_y - y)**2)**0.5
                 
-                # Apply jitter if enabled (AFTER moving to specific position)
+                # Only move the cursor if it's been significantly moved away from the target
+                if distance > 10:  # Only move if more than 10 pixels away
+                    # Move cursor back to the target position with animation
+                    pyautogui.moveTo(x, y, duration=0.3)
+                
+                # Apply jitter if enabled
+                click_x, click_y = x, y
                 if jitter_enabled:
                     jitter_x = random.randint(-jitter_amount, jitter_amount)
                     jitter_y = random.randint(-jitter_amount, jitter_amount)
-                    # Use moveRel for jitter to ensure it's relative to the specific position
-                    pyautogui.moveRel(xOffset=jitter_x, yOffset=jitter_y, duration=0.1)
+                    click_x += jitter_x
+                    click_y += jitter_y
+                    
+                    # If jitter is enabled, visually move to the jittered position
+                    pyautogui.moveTo(click_x, click_y, duration=0.1)
                 
-                # Get the final click position (after jitter if applied)
-                click_x, click_y = pyautogui.position()
-                
-                # Perform the click at the CURRENT position
+                # Click at the target position (or jittered position)
                 if click_type == "left":
-                    pyautogui.click(x=click_x, y=click_y, button='left')
+                    pyautogui.click()
                 else:
-                    pyautogui.click(x=click_x, y=click_y, button='right')
+                    pyautogui.rightClick()
             
-            else:  # current position mode
-                # Get current position
-                current_x, current_y = pyautogui.position()
-                
+            else:  # current position
                 # Apply jitter if enabled
                 if jitter_enabled:
                     jitter_x = random.randint(-jitter_amount, jitter_amount)
                     jitter_y = random.randint(-jitter_amount, jitter_amount)
                     pyautogui.moveRel(xOffset=jitter_x, yOffset=jitter_y, duration=0.1)
                 
-                # Click at current position (after jitter)
+                # Click at current position
                 if click_type == "left":
-                    pyautogui.click(button='left')
+                    pyautogui.click()
                 else:
-                    pyautogui.click(button='right')
+                    pyautogui.rightClick()
             
             # Increment click counter
             click_counter += 1
             
-            # Wait for the specified interval
+            # Wait for the interval
             time.sleep(click_interval)
             
         except Exception as e:
             logging.error(f"Error during automatic clicking: {e}")
             print(f"ERROR: {e}")
-            time.sleep(1)  # Wait a bit before retrying
+            time.sleep(1)
 
 def start_auto_click(interval=None, click_method=None, position=None, jitter=None):
     """Start automatic clicking with specified parameters"""
     global clicking, thread, click_interval, click_type, click_position, jitter_enabled
-    global position_selection_needed
+    global position_selection_needed, pyautogui_position
     
     # Update parameters if provided
     if interval is not None:
@@ -158,10 +163,18 @@ def start_auto_click(interval=None, click_method=None, position=None, jitter=Non
 
 def stop_auto_click():
     """Stop automatic clicking"""
-    global clicking
+    global clicking, specific_position, pyautogui_position, position_selection_needed
     
     logging.info("Stopping auto-click")
     clicking = False
+    
+    # Reset position-related variables when stopping
+    # This forces a new position selection next time if "select" mode is active
+    if click_position == "select" or click_position == "specific":
+        specific_position = None
+        pyautogui_position = None
+        position_selection_needed = True
+        logging.info("Position selection reset for next start")
 
 def update_interval(new_interval):
     """Update the interval between clicks while running"""
@@ -224,11 +237,21 @@ def update_limit(clicks, time_sec=0):
 
 def set_specific_position(x, y):
     """Establecer una posición específica para los clics"""
-    global specific_position, position_selection_needed
-    # Ensure we're using exact screen coordinates
+    global specific_position, position_selection_needed, pyautogui_position
+    
+    # Store the QT coordinates (we won't use these directly)
     specific_position = (int(x), int(y))
     position_selection_needed = False
-    logging.info(f"Posición específica establecida: ({x}, {y})")
+    logging.info(f"QT position establecida: ({x}, {y})")
+    
+    # IMPORTANT: Get the current mouse position from PyAutoGUI
+    # This happens right after the user has clicked in the position selector
+    # So the mouse is actually at the correct position already
+    pyautogui_position = pyautogui.position()
+    logging.info(f"PyAutoGUI position captured: {pyautogui_position}")
+    
+    print(f"DEBUG - QT position: {specific_position}")
+    print(f"DEBUG - PyAutoGUI position: {pyautogui_position}")
 
 def needs_position_selection():
     """Check if position selection is needed"""

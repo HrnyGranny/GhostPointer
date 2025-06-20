@@ -342,9 +342,10 @@ class ClickTab(QWidget):
             update_position("current")
             self.selected_position = None
         elif button_id == 2:
-            # Just mark that we want to use select mode, don't show selector yet
+            # If "Select" is chosen, reset any previously selected position
+            self.selected_position = None
             update_position("select")
-    
+
     def show_position_selector(self):
         """Muestra el selector de posición en pantalla"""
         self.overlay = PositionSelectorOverlay()
@@ -409,7 +410,7 @@ class ClickTab(QWidget):
         if position_id == 1:
             position = "current"
         else:  # position_id == 2
-            position = "specific" if self.selected_position else "select"
+            position = "select" if self.selected_position is None else "specific"
             
         # Calculate delay
         minutes = self.delay_min_spinbox.value()
