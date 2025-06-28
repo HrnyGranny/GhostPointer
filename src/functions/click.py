@@ -102,6 +102,9 @@ def _click_loop():
                     jitter_y = random.randint(-jitter_amount, jitter_amount)
                     pyautogui.moveRel(xOffset=jitter_x, yOffset=jitter_y, duration=0.1)
                 
+                # Wait for the interval
+                time.sleep(click_interval)
+                
                 # Click at current position
                 if click_type == "left":
                     pyautogui.click()
@@ -111,8 +114,7 @@ def _click_loop():
             # Increment click counter
             click_counter += 1
             
-            # Wait for the interval
-            time.sleep(click_interval)
+            
             
         except Exception as e:
             logging.error(f"Error during automatic clicking: {e}")

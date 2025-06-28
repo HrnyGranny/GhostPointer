@@ -41,17 +41,25 @@ class GhostPointerGUI(QWidget):
         # Crear la lógica del contador (antes de setup_ui para poder conectar señales)
         self.contador_logic = ContadorLogic(self)
         
+        # Inicializar el counter_icon como None para verificar luego
+        self.counter_icon = None
+        self.counter_display = None
+        
         self.setup_ui()
         self.apply_styles()
         
-        # Conectar la señal del contador a la UI
-        self.contador_logic.time_changed.connect(self.counter_display.setText)
+        # Conectar la señal del contador a la UI (ahora con verificación)
+        if hasattr(self, 'counter_display') and self.counter_display:
+            self.contador_logic.time_changed.connect(self.counter_display.setText)
         
         # Añadir botón de ayuda con posición absoluta
         self.help_button = HelpButton(self)
         # Posicionar en la esquina superior derecha (16px de margen)
         self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
         self.help_button.clicked.connect(self.show_help)
+        
+        # Establecer el icono inicial según la pestaña activa (ahora con verificación)
+        self.update_counter_icon()
 
     def apply_styles(self):
         # Aplicar estilos desde el módulo de estilos
@@ -101,6 +109,8 @@ class GhostPointerGUI(QWidget):
         # Tabs section with integrated switch
         self.tab_widget = CustomTabWidget()
         self.tab_widget.modeToggled.connect(self.toggle_dev_mode)
+        # Conectar el cambio de pestaña para detener acciones y actualizar icono
+        self.tab_widget.currentChanged.connect(self.handle_tab_change)
         
         # Tab 1: Mouse Movement (now using MouseTab class)
         self.movement_tab = MouseTab()
@@ -185,6 +195,51 @@ class GhostPointerGUI(QWidget):
         self.outer_layout.addWidget(self.main_container)
         self.outer_layout.addWidget(self.counter_widget)
 
+    def handle_tab_change(self, index):
+        """Maneja el cambio de pestaña"""
+        # Si hay alguna acción en curso, detenerla
+        if self.is_moving:
+            # Detener la acción actual
+            if index == 0:  # Cambiamos a pestaña de movimiento pero estábamos en click
+                stop_auto_click()
+            else:  # Cambiamos a pestaña de click pero estábamos en movimiento
+                stop_mouse_drift()
+            
+            # Actualizar UI
+            self.main_button.setIcon(QIcon(self.play_icon_path))
+            self.shortcut_label.setText("Ctrl+Space to start")
+            self.is_moving = False
+            
+            # Detener el contador
+            self.contador_logic.stop_counter()
+            
+            # Log en consola
+            if self.dev_mode:
+                self.console.log("Action stopped due to tab change.")
+        
+        # Actualizar el icono del contador según la pestaña activa
+        self.update_counter_icon()
+
+    def update_counter_icon(self):
+        """Actualiza el icono del contador según la pestaña activa"""
+        # Verificar que counter_icon exista antes de usarlo
+        if not hasattr(self, 'counter_icon') or not self.counter_icon:
+            return
+            
+        current_tab_index = self.tab_widget.currentIndex()
+        
+        if current_tab_index == 0:  # Movement tab
+            icon = QPixmap(self.movement_icon_path)
+        else:  # Click tab
+            icon = QPixmap(self.click_icon_path)
+        
+        # Escalar y establecer el icono
+        self.counter_icon.setPixmap(icon.scaled(
+            16, 16, 
+            Qt.AspectRatioMode.KeepAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        ))
+
     def show_help(self):
         """Muestra el diálogo de ayuda"""
         # Implementaremos esto más adelante
@@ -216,6 +271,10 @@ class GhostPointerGUI(QWidget):
     
     def set_counter_type(self, type_name):
         """Establece qué tipo de operación está activa para mostrar el icono correcto"""
+        # Verificar que counter_icon exista antes de usarlo
+        if not hasattr(self, 'counter_icon') or not self.counter_icon:
+            return
+            
         # Usar la lógica del contador para establecer el tipo
         type_name = self.contador_logic.set_active_type(type_name)
         
