@@ -217,9 +217,12 @@ class GhostPointerGUI(QWidget):
             if self.dev_mode:
                 self.console.log("Action stopped due to tab change.")
         
+        # Resetear el contador al cambiar de pestaña
+        self.contador_logic.reset_counter()
+        
         # Actualizar el icono del contador según la pestaña activa
         self.update_counter_icon()
-
+    
     def update_counter_icon(self):
         """Actualiza el icono del contador según la pestaña activa"""
         # Verificar que counter_icon exista antes de usarlo
@@ -338,12 +341,14 @@ class GhostPointerGUI(QWidget):
                 # Starting movement with parameters
                 start_mouse_drift(
                     speed=settings['speed'], 
-                    delay=settings['delay']
+                    delay=settings['delay'],
+                    stop_on_move_param=settings['stop_on_move']  # Nuevo parámetro
                 )
                 
                 # Log in console
                 if self.dev_mode:
-                    self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms")
+                    stop_msg = " (stops on manual movement)" if settings['stop_on_move'] else ""
+                    self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms{stop_msg}")
                 
                 # Change to STOP icon
                 self.main_button.setIcon(QIcon(self.stop_icon_path))

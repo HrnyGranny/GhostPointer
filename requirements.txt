@@ -1,3 +1,4 @@
 pyautogui
 PyQt6
 pyinstaller
+pynput

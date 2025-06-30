@@ -58,26 +58,27 @@ class MouseTab(QWidget):
         self.delay_spinbox.setFixedWidth(100)
         self.delay_spinbox.valueChanged.connect(self.update_delay_value)
         
-        # Create container for Smooth label and checkbox
-        smooth_container = QHBoxLayout()
+        # Create container for Stop label and checkbox (renamed from "Smooth")
+        stop_container = QHBoxLayout()
         
-        # Smooth label - added to the left of checkbox
-        smooth_label = QLabel("Smooth")
-        smooth_label.setObjectName("smoothLabel")
+        # Stop label - added to the left of checkbox (renamed from "Smooth")
+        stop_label = QLabel("Stop on move")
+        stop_label.setObjectName("stopLabel")  # Changed from "smoothLabel"
         
-        # Checkbox without text
-        self.smooth_checkbox = QCheckBox("")
-        self.smooth_checkbox.setChecked(False) 
+        # Checkbox without text (renamed from "smooth_checkbox")
+        self.stop_checkbox = QCheckBox("")
+        self.stop_checkbox.setChecked(False)
+        self.stop_checkbox.setToolTip("Stop automatic movement when you move the mouse manually")
         
-        smooth_container.addWidget(smooth_label)
-        smooth_container.addWidget(self.smooth_checkbox)
-        smooth_container.setSpacing(2)  # Minimal spacing between label and checkbox
+        stop_container.addWidget(stop_label)
+        stop_container.addWidget(self.stop_checkbox)
+        stop_container.setSpacing(2)  # Minimal spacing between label and checkbox
         
         # Add all options to the layout
         options_layout.addWidget(delay_label)
         options_layout.addWidget(self.delay_spinbox)
-        options_layout.addStretch(1)  # Stretch to push the smooth option to the right
-        options_layout.addLayout(smooth_container)
+        options_layout.addStretch(1)  # Stretch to push the stop option to the right
+        options_layout.addLayout(stop_container)
         
         # Speed section
         speed_layout = QVBoxLayout()
@@ -132,5 +133,5 @@ class MouseTab(QWidget):
         return {
             'speed': self.speed_slider.value(),
             'delay': self.delay_spinbox.value(),
-            'smooth': self.smooth_checkbox.isChecked()
+            'stop_on_move': self.stop_checkbox.isChecked()  # Renamed from 'smooth'
         }
