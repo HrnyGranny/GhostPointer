@@ -139,8 +139,30 @@ def get_app_styles():
             font-size: 14px;
         }
         
-        QLabel#smoothLabel {
+        QLabel#stopLabel {
             color: #E1E1E1;
             padding-right: 0px;
+        }
+        #counterWidget {
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+        }
+
+        #counterWidget QLabel {
+            font-size: 11px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            background: transparent;
+        }
+        
+        #counterDisplay {
+            color: #D0BCFF;
+            font-weight: bold;
+            font-family: 'Consolas', 'Courier New', monospace;
+            border: none;
+            padding: 0px;
+            margin: 0px;
+            background: transparent;
         }
     """

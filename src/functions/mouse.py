@@ -3,7 +3,6 @@ import random
 import time
 import logging
 import pyautogui
-from pynput import mouse
 
 # Disable pyautogui safety feature
 pyautogui.FAILSAFE = False
@@ -17,34 +16,22 @@ thread = None
 speed_factor = 25  # Default speed (1-100, higher is faster)
 delay_between_moves = 1.0  # Default delay in seconds
 stop_on_move = False  # Flag to stop when user moves mouse manually
-last_manual_move_time = 0  # Timestamp of last manual mouse movement
 
-# Mouse listener
-mouse_listener = None
+# Variables para detectar movimiento manual
+expected_position = None
+manual_movement_detected = False  # Flag para indicar que se detectó movimiento manual
 
-def on_mouse_move(x, y):
-    """Callback function for manual mouse movement detection"""
-    global last_manual_move_time
-    last_manual_move_time = time.time()
-    logging.debug(f"Manual mouse movement detected at {x}, {y}")
-
-def init_mouse_listener():
-    """Initialize the mouse listener if needed"""
-    global mouse_listener
-    if mouse_listener is None:
-        mouse_listener = mouse.Listener(on_move=on_mouse_move)
-        mouse_listener.daemon = True
+def check_manual_movement():
+    """Verifica si se ha detectado movimiento manual"""
+    global manual_movement_detected
+    result = manual_movement_detected
+    manual_movement_detected = False  # Resetear después de consultar
+    return result
 
 def _mouse_loop():
     """Main function to move the mouse"""
-    global drifting, speed_factor, delay_between_moves, stop_on_move, last_manual_move_time
-    
-    # Start mouse listener if stop_on_move is enabled
-    if stop_on_move:
-        init_mouse_listener()
-        if not mouse_listener.running:
-            mouse_listener.start()
-            logging.info("Mouse movement detection started")
+    global drifting, speed_factor, delay_between_moves, stop_on_move
+    global expected_position, manual_movement_detected
     
     # Get screen size
     screen_width, screen_height = pyautogui.size()
@@ -55,13 +42,22 @@ def _mouse_loop():
     
     while drifting:
         try:
-            # Check if we should pause due to manual movement
-            if stop_on_move and (time.time() - last_manual_move_time < 0.5):
-                # User moved the mouse manually in the last 0.5 seconds
-                # Wait a bit and continue checking
-                time.sleep(0.1)
-                continue
-                
+            # Verificar si debemos detectar movimiento manual
+            if stop_on_move and expected_position is not None:
+                current_position = pyautogui.position()
+                # Si la posición actual difiere significativamente de la esperada
+                if abs(current_position[0] - expected_position[0]) > 10 or \
+                   abs(current_position[1] - expected_position[1]) > 10:
+                    # Detectamos movimiento manual
+                    logging.info(f"Manual movement detected! Stopping mouse movement.")
+                    
+                    # Establecer la bandera de movimiento manual
+                    manual_movement_detected = True
+                    
+                    # Detener el movimiento automático
+                    drifting = False
+                    return
+            
             # Current position
             current_x, current_y = pyautogui.position()
             
@@ -76,6 +72,9 @@ def _mouse_loop():
             # Move the mouse with pyautogui (smooth movement)
             pyautogui.moveTo(target_x, target_y, duration=duration, tween=pyautogui.easeInOutQuad)
             
+            # Guardar la posición esperada después del movimiento
+            expected_position = (target_x, target_y)
+            
             # Wait for the specified delay between movements
             time.sleep(delay_between_moves)
             
@@ -85,7 +84,8 @@ def _mouse_loop():
 
 def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
     """Start random mouse movement with specified parameters"""
-    global drifting, thread, speed_factor, delay_between_moves, last_manual_move_time, stop_on_move
+    global drifting, thread, speed_factor, delay_between_moves, stop_on_move
+    global expected_position, manual_movement_detected
     
     # Update parameters if provided
     if speed is not None:
@@ -93,9 +93,10 @@ def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
     if delay is not None:
         delay_between_moves = delay / 1000.0  # Convert from ms to seconds
     
-    # Set stop_on_move flag with different parameter name to avoid confusion
+    # Set stop_on_move flag
     stop_on_move = stop_on_move_param
-    last_manual_move_time = time.time()
+    expected_position = None
+    manual_movement_detected = False
     
     if drifting:
         return thread  # Already moving
@@ -108,15 +109,10 @@ def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
 
 def stop_mouse_drift():
     """Stop random mouse movement"""
-    global drifting, mouse_listener
+    global drifting
     
     logging.info("Stopping mouse movement")
     drifting = False
-    
-    # Stop mouse listener if running
-    if mouse_listener and mouse_listener.running:
-        mouse_listener.stop()
-        logging.info("Mouse movement detection stopped")
 
 def update_speed(new_speed):
     """Update the speed factor while running"""

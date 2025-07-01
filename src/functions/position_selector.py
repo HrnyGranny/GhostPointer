@@ -25,7 +25,7 @@ class PositionSelectorOverlay(QWidget):
         self.setGeometry(screen_rect)
         
         # Instrucciones
-        self.instruction_label = QLabel("Haz clic para seleccionar la posición del cursor\nPresiona ESC para cancelar", self)
+        self.instruction_label = QLabel("Click to select the position\nESC to cancel", self)
         self.instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.instruction_label.setStyleSheet("""
             background-color: rgba(0, 0, 0, 150);

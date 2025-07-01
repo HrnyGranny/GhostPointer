@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QFrame)
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIcon, QPixmap
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 import os
 
-from src.functions.mouse import start_mouse_drift, stop_mouse_drift
+from src.functions.mouse import start_mouse_drift, stop_mouse_drift, check_manual_movement
 from src.functions.click import start_auto_click, stop_auto_click
 from src.gui.mouse import MouseTab
 from src.gui.click import ClickTab
@@ -60,6 +60,11 @@ class GhostPointerGUI(QWidget):
         
         # Establecer el icono inicial según la pestaña activa (ahora con verificación)
         self.update_counter_icon()
+        
+        # Configurar timer para verificar movimiento manual
+        self.movement_check_timer = QTimer()
+        self.movement_check_timer.timeout.connect(self.check_manual_movement)
+        self.movement_check_timer.start(100)  # Verificar cada 100ms
 
     def apply_styles(self):
         # Aplicar estilos desde el módulo de estilos
@@ -166,31 +171,6 @@ class GhostPointerGUI(QWidget):
             self.counter_widget.width() - 80, 0, 72, 22
         )
         
-        # Estilos sin contenedores adicionales
-        self.counter_widget.setStyleSheet("""
-            #counterWidget {
-                background-color: #1e1e1e;
-                border-top: 1px solid #333;
-            }
-            QLabel {
-                color: #e0e0e0;
-                font-size: 11px;
-                border: none;
-                padding: 0px;
-                margin: 0px;
-                background: transparent;
-            }
-            #counterDisplay {
-                color: #D0BCFF;
-                font-weight: bold;
-                font-family: 'Consolas', 'Courier New', monospace;
-                border: none;
-                padding: 0px;
-                margin: 0px;
-                background: transparent;
-            }
-        """)
-        
         # Añadir todo al layout principal externo
         self.outer_layout.addWidget(self.main_container)
         self.outer_layout.addWidget(self.counter_widget)
@@ -222,6 +202,23 @@ class GhostPointerGUI(QWidget):
         
         # Actualizar el icono del contador según la pestaña activa
         self.update_counter_icon()
+    
+    def check_manual_movement(self):
+        """Verifica periódicamente si se ha detectado movimiento manual"""
+        # Solo verificar si la pestaña de movimiento está activa y estamos en movimiento
+        current_tab_index = self.tab_widget.currentIndex()
+        if current_tab_index == 0 and self.is_moving:
+            # Verificar si se detectó movimiento manual
+            if check_manual_movement():
+                # Actualizar la interfaz para reflejar que se ha detenido
+                self.main_button.setIcon(QIcon(self.play_icon_path))
+                self.shortcut_label.setText("Ctrl+Space to start")
+                self.is_moving = False
+                self.contador_logic.stop_counter()
+                
+                # Log en consola
+                if self.dev_mode:
+                    self.console.log("Mouse movement stopped: manual movement detected")
     
     def update_counter_icon(self):
         """Actualiza el icono del contador según la pestaña activa"""
