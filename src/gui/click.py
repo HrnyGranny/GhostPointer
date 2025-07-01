@@ -242,62 +242,6 @@ class ClickTab(QWidget):
         main_layout.addStretch()
         
         self.setLayout(main_layout)
-        
-        # Add custom styles
-        self.setStyleSheet("""
-            QPushButton#compactButton {
-                background-color: #1E1E1E;
-                color: #E1E1E1;
-                border: 1px solid #31303A;
-                border-radius: 6px;
-                padding: 2px 4px;
-                font-size: 11px;
-                min-width: 60px;
-            }
-            
-            QPushButton#compactButton:hover {
-                background-color: #2A2A2A;
-                border: 1px solid #6750A4;
-            }
-            
-            QPushButton#compactButton:checked {
-                background-color: #31303A;
-                border: 1px solid #6750A4;
-                color: #D0BCFF;
-            }
-            
-            QRadioButton {
-                color: #E1E1E1;
-                font-size: 11px;
-            }
-            
-            QRadioButton::indicator {
-                width: 12px;
-                height: 12px;
-                border-radius: 6px;
-            }
-            
-            QRadioButton::indicator:unchecked {
-                background-color: #2A2A2A;
-                border: 1px solid #3A3A3A;
-            }
-            
-            QRadioButton::indicator:checked {
-                background-color: #6750A4;
-                border: 1px solid #D0BCFF;
-            }
-            
-            QSpinBox:disabled {
-                background-color: #1A1A1A;
-                color: #5A5A5A;
-                border: 1px solid #2A2A2A;
-            }
-            
-            QLabel#sectionLabel {
-                color: #E1E1E1;
-                font-weight: 500;
-            }
-        """)
 
     def update_limit_type(self, button):
         """Update limit type and configure the shared spinbox accordingly"""
