@@ -8,9 +8,8 @@ from src.functions.click import start_auto_click, stop_auto_click
 from src.gui.mouse import MouseTab
 from src.gui.click import ClickTab
 from src.gui.assets import get_icon
-from src.gui.components import CustomTabWidget, IconButton, HelpButton
+from src.gui.components import CustomTabWidget, IconButton, HelpButton, ContadorLogic
 from src.gui.console import ConsoleOutput
-from src.gui.contador import ContadorLogic
 from src.gui.styles import get_app_styles
 
 class GhostPointerGUI(QWidget):

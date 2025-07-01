@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import (QWidget, QTabWidget, QPushButton)
-from PyQt6.QtGui import (QPainter, QPainterPath, QBrush, QColor, QIcon)
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
+from PyQt6.QtWidgets import (QWidget, QTabWidget, QPushButton, QHBoxLayout)
+from PyQt6.QtGui import (QPainter, QPainterPath, QBrush, QColor, QIcon, QPixmap)
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QObject, QTimer
+import time
 
 # Custom Switch Button implementation
 class QSwitchButton(QWidget):
@@ -72,6 +73,7 @@ class QSwitchButton(QWidget):
         self.update()
         self.toggled.emit(self.isChecked)
 
+
 class CustomTabWidget(QTabWidget):
     modeToggled = pyqtSignal(bool)
     
@@ -83,44 +85,6 @@ class CustomTabWidget(QTabWidget):
         
         # Connect switch signal
         self.mode_switch.toggled.connect(self.toggle_mode)
-        
-        # Set side margins for the tab bar
-        self.setStyleSheet("""
-            QTabWidget::pane {
-                border: none;
-                border-radius: 12px;
-                background-color: #1E1E1E;
-                margin-top: 4px;
-            }
-            
-            QTabBar {
-                padding-left: 30px;
-            }
-            
-            QTabBar::tab {
-                background-color: transparent;
-                color: #B0B0B0;
-                border: none;
-                border-radius: 6px;
-                min-width: 100px;
-                padding: 8px 16px;
-                margin-right: 4px;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                font-size: 11px;
-            }
-            
-            QTabBar::tab:selected {
-                background-color: #6750A4;
-                color: white;
-            }
-            
-            QTabBar::tab:hover:!selected {
-                background-color: rgba(103, 80, 164, 0.1);
-                color: #D0BCFF;
-            }
-        """)
         
     def toggle_mode(self, enabled):
         # Emit the signal so GhostPointerGUI can handle the console
@@ -143,46 +107,78 @@ class CustomTabWidget(QTabWidget):
             (tabbar_height - self.mode_switch.height()) // 2
         )
 
+
 class IconButton(QPushButton):
     def __init__(self, icon_path, parent=None):
         super().__init__(parent)
         self.setIcon(QIcon(icon_path))
         self.setIconSize(QSize(90, 90))
         self.setFixedSize(90, 90)
-        # Remove all button styling to show only the icon
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                border: none;
-            }
-            QPushButton:hover {
-                background-color: transparent;
-            }
-            QPushButton:pressed {
-                background-color: transparent;
-            }
-        """)
+        self.setObjectName("iconButton")
         # Make the button flat
         self.setFlat(True)
+
 
 class HelpButton(QPushButton):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(24, 24)
         self.setText("?")
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: #31303A;
-                color: #D0BCFF;
-                border-radius: 12px;
-                font-weight: bold;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #6750A4;
-                color: white;
-            }
-            QPushButton:pressed {
-                background-color: #4F3B8B;
-            }
-        """)
+        self.setObjectName("helpButton")
+
+
+class ContadorLogic(QObject):
+    """
+    Clase que maneja la lógica del contador, separada de la interfaz gráfica.
+    Emite señales cuando cambia el tiempo para actualizar la UI.
+    """
+    time_changed = pyqtSignal(str)  # Señal que emite el tiempo formateado
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Estado y variables
+        self.start_time = 0
+        self.is_running = False
+        self.active_type = "movement"  # movement o click
+        
+        # Configurar timer
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_counter)
+        self.timer.setInterval(100)  # Actualizar cada 100ms para que sea suave
+    
+    def set_active_type(self, type_name):
+        """Establece qué tipo de operación está activa"""
+        self.active_type = type_name
+        return self.active_type
+    
+    def start_counter(self):
+        """Inicia el contador"""
+        self.start_time = time.time()
+        self.is_running = True
+        self.timer.start()
+    
+    def stop_counter(self):
+        """Detiene el contador"""
+        self.is_running = False
+        self.timer.stop()
+    
+    def reset_counter(self):
+        """Reinicia el contador a cero"""
+        self.time_changed.emit("00:00:00")
+    
+    def update_counter(self):
+        """Actualiza el contador y emite la señal con el tiempo actualizado"""
+        if not self.is_running:
+            return
+        
+        # Calcular tiempo transcurrido
+        elapsed_time = time.time() - self.start_time
+        
+        # Formatear tiempo como HH:MM:SS
+        hours = int(elapsed_time / 3600)
+        minutes = int((elapsed_time % 3600) / 60)
+        seconds = int(elapsed_time % 60)
+        
+        # Emitir señal con el tiempo formateado
+        self.time_changed.emit(f"{hours:02d}:{minutes:02d}:{seconds:02d}")

@@ -213,7 +213,6 @@ def get_app_styles():
         }
 
         #counterWidget QLabel {
-            color: #e0e0e0;
             font-size: 11px;
             border: none;
             padding: 0px;
@@ -229,5 +228,73 @@ def get_app_styles():
             padding: 0px;
             margin: 0px;
             background: transparent;
+        }
+        
+        /* Estilo específico para CustomTabWidget */
+        QTabWidget::pane {
+            border: none;
+            border-radius: 12px;
+            background-color: #1E1E1E;
+            margin-top: 4px;
+        }
+        
+        QTabBar {
+            padding-left: 30px;
+        }
+        
+        QTabBar::tab {
+            background-color: transparent;
+            color: #B0B0B0;
+            border: none;
+            border-radius: 6px;
+            min-width: 100px;
+            padding: 8px 16px;
+            margin-right: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+        }
+        
+        QTabBar::tab:selected {
+            background-color: #6750A4;
+            color: white;
+        }
+        
+        QTabBar::tab:hover:!selected {
+            background-color: rgba(103, 80, 164, 0.1);
+            color: #D0BCFF;
+        }
+        
+        /* Estilos para el IconButton */
+        QPushButton#iconButton {
+            background-color: transparent;
+            border: none;
+        }
+        
+        QPushButton#iconButton:hover {
+            background-color: transparent;
+        }
+        
+        QPushButton#iconButton:pressed {
+            background-color: transparent;
+        }
+        
+        /* Estilos para el HelpButton */
+        QPushButton#helpButton {
+            background-color: #31303A;
+            color: #D0BCFF;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        QPushButton#helpButton:hover {
+            background-color: #6750A4;
+            color: white;
+        }
+        
+        QPushButton#helpButton:pressed {
+            background-color: #4F3B8B;
         }
     """
