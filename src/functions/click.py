@@ -263,3 +263,8 @@ def reset_position_selection_state():
     """Reset the position selection state after cancellation"""
     global position_selection_needed
     position_selection_needed = False
+
+def is_clicking():
+    """Retorna si el auto-click está activo actualmente"""
+    global clicking
+    return clicking

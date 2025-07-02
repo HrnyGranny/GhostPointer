@@ -21,6 +21,10 @@ stop_on_move = False  # Flag to stop when user moves mouse manually
 expected_position = None
 manual_movement_detected = False  # Flag para indicar que se detectó movimiento manual
 
+# Variables para el área de movimiento
+movement_area_mode = "fullscreen"  # "fullscreen" o "sized"
+movement_area = None  # (x, y, width, height) para modo "sized"
+
 def check_manual_movement():
     """Verifica si se ha detectado movimiento manual"""
     global manual_movement_detected
@@ -32,8 +36,9 @@ def _mouse_loop():
     """Main function to move the mouse"""
     global drifting, speed_factor, delay_between_moves, stop_on_move
     global expected_position, manual_movement_detected
+    global movement_area_mode, movement_area
     
-    # Get screen size
+    # Get screen size for fullscreen mode
     screen_width, screen_height = pyautogui.size()
     logging.info(f"Screen size: {screen_width}x{screen_height}")
     
@@ -61,9 +66,23 @@ def _mouse_loop():
             # Current position
             current_x, current_y = pyautogui.position()
             
-            # New random position
-            target_x = random.randint(margin, screen_width - margin)
-            target_y = random.randint(margin, screen_height - margin)
+            # New random position based on movement area mode
+            if movement_area_mode == "fullscreen":
+                # Full screen movement with margin
+                target_x = random.randint(margin, screen_width - margin)
+                target_y = random.randint(margin, screen_height - margin)
+            else:  # "sized" mode
+                if movement_area:
+                    # Movement within the defined area
+                    x, y, width, height = movement_area
+                    # Apply a smaller margin for the defined area
+                    area_margin = min(10, width // 10, height // 10)
+                    target_x = random.randint(x + area_margin, x + width - area_margin)
+                    target_y = random.randint(y + area_margin, y + height - area_margin)
+                else:
+                    # Fallback to full screen if no area defined
+                    target_x = random.randint(margin, screen_width - margin)
+                    target_y = random.randint(margin, screen_height - margin)
             
             # Calculate move duration based on speed factor
             # Higher speed_factor = shorter duration = faster movement
@@ -82,16 +101,18 @@ def _mouse_loop():
             logging.error(f"Error moving mouse: {e}")
             time.sleep(1)  # Wait a bit before retrying
 
-def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
+def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False, area=None):
     """Start random mouse movement with specified parameters"""
     global drifting, thread, speed_factor, delay_between_moves, stop_on_move
-    global expected_position, manual_movement_detected
+    global expected_position, manual_movement_detected, movement_area
     
     # Update parameters if provided
     if speed is not None:
         speed_factor = speed
     if delay is not None:
         delay_between_moves = delay / 1000.0  # Convert from ms to seconds
+    if area is not None:
+        movement_area = area
     
     # Set stop_on_move flag
     stop_on_move = stop_on_move_param
@@ -101,7 +122,12 @@ def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
     if drifting:
         return thread  # Already moving
     
-    logging.info(f"Starting mouse movement with speed={speed_factor}, delay={delay_between_moves}s, stop_on_move={stop_on_move}")
+    area_info = f", area={movement_area}" if movement_area_mode == "sized" and movement_area else ""
+    
+    logging.info(f"Starting mouse movement with speed={speed_factor}, "
+                f"delay={delay_between_moves}s, stop_on_move={stop_on_move}, "
+                f"mode={movement_area_mode}{area_info}")
+    
     drifting = True
     thread = threading.Thread(target=_mouse_loop, daemon=True)
     thread.start()
@@ -109,10 +135,15 @@ def start_mouse_drift(speed=None, delay=None, stop_on_move_param=False):
 
 def stop_mouse_drift():
     """Stop random mouse movement"""
-    global drifting
+    global drifting, movement_area
     
     logging.info("Stopping mouse movement")
     drifting = False
+    
+    # Resete the area
+    if movement_area_mode == "sized":
+        movement_area = None
+        logging.info("Movement area has been reset for next selection")
 
 def update_speed(new_speed):
     """Update the speed factor while running"""
@@ -125,3 +156,20 @@ def update_delay(new_delay_ms):
     global delay_between_moves
     delay_between_moves = new_delay_ms / 1000.0  # Convert from ms to seconds
     logging.info(f"Delay updated to {delay_between_moves}s")
+
+def update_area_mode(mode):
+    """Update the movement area mode"""
+    global movement_area_mode
+    if mode in ["fullscreen", "sized"]:
+        movement_area_mode = mode
+        logging.info(f"Movement area mode updated to {movement_area_mode}")
+
+def set_movement_area(x, y, width, height):
+    """Set the movement area for sized mode"""
+    global movement_area
+    movement_area = (x, y, width, height)
+    logging.info(f"Movement area set to {movement_area}")
+
+def needs_area_selection():
+    """Check if area selection is needed"""
+    return movement_area_mode == "sized" and movement_area is None

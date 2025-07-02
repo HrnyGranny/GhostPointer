@@ -1,10 +1,10 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QFrame)
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIcon, QPixmap
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QRect
 import os
 
 from src.functions.mouse import start_mouse_drift, stop_mouse_drift, check_manual_movement
-from src.functions.click import start_auto_click, stop_auto_click
+from src.functions.click import start_auto_click, stop_auto_click, is_clicking
 from src.gui.mouse import MouseTab
 from src.gui.click import ClickTab
 from src.gui.assets import get_icon
@@ -30,6 +30,7 @@ class GhostPointerGUI(QWidget):
         self.is_moving = False
         self.dev_mode = False
         self.position_selection_pending = False
+        self.area_selection_pending = False
         
         # Define paths to icon files
         self.play_icon_path = get_icon('Play.png')
@@ -64,6 +65,11 @@ class GhostPointerGUI(QWidget):
         self.movement_check_timer = QTimer()
         self.movement_check_timer.timeout.connect(self.check_manual_movement)
         self.movement_check_timer.start(100)  # Verificar cada 100ms
+        
+        # Configurar timer para verificar estado de auto-click
+        self.click_check_timer = QTimer()
+        self.click_check_timer.timeout.connect(self.check_click_status)
+        self.click_check_timer.start(500)  # Verificar cada 500ms
 
     def apply_styles(self):
         # Aplicar estilos desde el módulo de estilos
@@ -219,6 +225,23 @@ class GhostPointerGUI(QWidget):
                 if self.dev_mode:
                     self.console.log("Mouse movement stopped: manual movement detected")
     
+    def check_click_status(self):
+        """Verifica periódicamente si el auto-click se ha detenido externamente"""
+        # Solo verificar si estamos en la pestaña de click y creemos que está activo
+        current_tab_index = self.tab_widget.currentIndex()
+        if current_tab_index == 1 and self.is_moving and not is_clicking():
+            # Actualizar UI para reflejar que se ha detenido
+            self.main_button.setIcon(QIcon(self.play_icon_path))
+            self.shortcut_label.setText("Ctrl+Space to start")
+            self.is_moving = False
+            
+            # Detener el contador
+            self.contador_logic.stop_counter()
+            
+            # Log en consola
+            if self.dev_mode:
+                self.console.log("Auto-click stopped automatically (limit reached)")
+    
     def update_counter_icon(self):
         """Actualiza el icono del contador según la pestaña activa"""
         # Verificar que counter_icon exista antes de usarlo
@@ -323,6 +346,41 @@ class GhostPointerGUI(QWidget):
         self.set_counter_type("click")
         self.contador_logic.reset_counter()
         self.contador_logic.start_counter()
+    
+    def handle_area_selection_complete(self, rect):
+        """Handle completion of area selection"""
+        # Area has been selected, now we can start mouse movement
+        settings = self.movement_tab.get_current_settings()
+        
+        # Convert QRect to tuple
+        area = (rect.x(), rect.y(), rect.width(), rect.height())
+        
+        # Starting movement with parameters
+        start_mouse_drift(
+            speed=settings['speed'], 
+            delay=settings['delay'],
+            stop_on_move_param=settings['stop_on_move'],
+            area=area
+        )
+        
+        # Log in console
+        if self.dev_mode:
+            stop_msg = " (stops on manual movement)" if settings['stop_on_move'] else ""
+            area_info = f" in area ({area[0]},{area[1]},{area[2]}x{area[3]})"
+            self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms{stop_msg}{area_info}")
+        
+        # Change to STOP icon
+        self.main_button.setIcon(QIcon(self.stop_icon_path))
+        # Update shortcut text
+        self.shortcut_label.setText("Ctrl+Space to stop")
+        # Change state
+        self.is_moving = True
+        self.area_selection_pending = False
+        
+        # Iniciar contador con el tipo "movement"
+        self.set_counter_type("movement")
+        self.contador_logic.reset_counter()
+        self.contador_logic.start_counter()
 
     def toggle_movement(self):
         """Start or stop the current action based on the active tab"""
@@ -334,17 +392,37 @@ class GhostPointerGUI(QWidget):
                 # Get current settings from mouse tab
                 settings = self.movement_tab.get_current_settings()
                 
+                # Siempre mostrar selector de área en modo Sized, independientemente 
+                # de si ya hay un área seleccionada o no
+                if settings['mode'] == 'sized':
+                    # Mark that we have a pending area selection
+                    self.area_selection_pending = True
+                    
+                    # Show area selector
+                    self.movement_tab.show_area_selector()
+                    
+                    # Connect the area selected signal to continue with mouse movement
+                    self.movement_tab.overlay.areaSelected.connect(self.handle_area_selection_complete)
+                    
+                    # Don't change state yet - wait for area selection
+                    return
+                
                 # Starting movement with parameters
                 start_mouse_drift(
                     speed=settings['speed'], 
                     delay=settings['delay'],
-                    stop_on_move_param=settings['stop_on_move']  # Nuevo parámetro
+                    stop_on_move_param=settings['stop_on_move'],
+                    area=settings['area']
                 )
                 
                 # Log in console
                 if self.dev_mode:
                     stop_msg = " (stops on manual movement)" if settings['stop_on_move'] else ""
-                    self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms{stop_msg}")
+                    area_info = ""
+                    if settings['mode'] == 'sized' and settings['area']:
+                        x, y, w, h = settings['area']
+                        area_info = f" in area ({x},{y},{w}x{h})"
+                    self.console.log(f"Mouse movement started with speed={settings['speed']}, delay={settings['delay']}ms{stop_msg}{area_info}")
                 
                 # Change to STOP icon
                 self.main_button.setIcon(QIcon(self.stop_icon_path))
@@ -416,6 +494,10 @@ class GhostPointerGUI(QWidget):
             if current_tab_index == 0:  # Movement tab
                 # Stopping movement
                 stop_mouse_drift()
+                
+                # Resetear el área seleccionada para que se solicite una nueva la próxima vez
+                if hasattr(self.movement_tab, 'mode_group') and self.movement_tab.mode_group.checkedId() == 2:  # Si "Sized" está seleccionado
+                    self.movement_tab.reset_selected_area()
                 
                 # Log in console
                 if self.dev_mode:
