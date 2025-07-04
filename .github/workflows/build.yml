@@ -22,14 +22,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r GhostPointer/requirements.txt
     
     - name: Build executable
       run: |
+        cd GhostPointer
         pyinstaller --onefile --windowed --name=GhostPointer --add-data "assets;assets" --icon=assets/GhostPointer.ico main.py
     
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
         name: GhostPointer
-        path: dist/GhostPointer.exe
+        path: GhostPointer/dist/GhostPointer.exe
