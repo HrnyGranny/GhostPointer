@@ -30,6 +30,13 @@ GhostPointer is a powerful Python application that provides advanced cursor and 
 - 🛡️ **Windows Integration** - Seamless Windows taskbar integration
 - 🎨 **Modern GUI** - Clean, user-friendly interface
 
+### 📸 Screenshots
+
+<div align="center">
+<img src="assets/screenshot1.png" alt="Screenshot 1" width="400">
+<img src="assets/screenshot2.png" alt="Screenshot 2" width="400">
+</div>
+
 ---
 
 ## 📦 Installation
@@ -61,13 +68,6 @@ python main.py
 Download the latest pre-built executable from [Releases](https://github.com/HrnyGranny/GhostPointer/releases)
 
 ---
-
-### 📸 Screenshots
-
-<div align="center">
-<img src="assets/screenshot1.png" alt="Screenshot 1" width="400">
-<img src="assets/screenshot2.png" alt="Screenshot 2" width="400">
-</div>
 
 ## 🛠️ Built With
 
