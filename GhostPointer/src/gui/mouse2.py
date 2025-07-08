@@ -5,48 +5,6 @@ from PyQt6.QtCore import Qt, QRect
 from src.functions.mouse import update_speed, update_delay, update_area_mode, set_movement_area
 from src.functions.area_selector import AreaSelectorOverlay
 
-class DecimalSpinBox(QSpinBox):
-    """SpinBox personalizado que muestra valores con un decimal"""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setDecimals(1)  # Número de decimales a mostrar
-        self.factor = 10     # Factor de multiplicación (10 para un decimal)
-        
-    def setDecimals(self, decimals):
-        self.decimals = decimals
-        
-    def textFromValue(self, value):
-        """Convierte el valor interno a texto con decimal"""
-        return f"{value / self.factor:.1f}"
-        
-    def valueFromText(self, text):
-        """Convierte el texto a valor interno"""
-        try:
-            value = float(text.replace(self.suffix(), "").strip())
-            return int(value * self.factor)
-        except ValueError:
-            return 0
-            
-    def setValue(self, value):
-        """Establece el valor considerando la escala"""
-        super().setValue(int(value * self.factor))
-            
-    def value(self):
-        """Devuelve el valor real (con decimales)"""
-        return super().value() / self.factor
-        
-    def setMinimum(self, minimum):
-        """Establece el valor mínimo considerando la escala"""
-        super().setMinimum(int(minimum * self.factor))
-        
-    def setMaximum(self, maximum):
-        """Establece el valor máximo considerando la escala"""
-        super().setMaximum(int(maximum * self.factor))
-        
-    def setSingleStep(self, step):
-        """Establece el paso considerando la escala"""
-        super().setSingleStep(int(step * self.factor))
-
 class MouseTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -94,13 +52,12 @@ class MouseTab(QWidget):
         # Delay option with spinbox
         delay_label = QLabel("Delay")
         
-        # SpinBox personalizado para valores decimales pero con el estilo de QSpinBox
-        self.delay_spinbox = DecimalSpinBox()
-        self.delay_spinbox.setMinimum(0.0)        # 0.0 segundos mínimo
-        self.delay_spinbox.setMaximum(100.0)      # 100.0 segundos máximo
-        self.delay_spinbox.setValue(1.0)          # Default value: 1.0 second
-        self.delay_spinbox.setSingleStep(0.1)     # Incrementos de 0.1 segundos
-        self.delay_spinbox.setSuffix(" s")        # Sufijo "s" para segundos
+        # SpinBox for delay input
+        self.delay_spinbox = QSpinBox()
+        self.delay_spinbox.setMinimum(0)
+        self.delay_spinbox.setMaximum(5000)
+        self.delay_spinbox.setValue(1000)  # Default value: 1000 ms (1 second)
+        self.delay_spinbox.setSuffix(" ms")
         self.delay_spinbox.setFixedWidth(100)
         self.delay_spinbox.valueChanged.connect(self.update_delay_value)
         
@@ -210,7 +167,6 @@ class MouseTab(QWidget):
     
     def update_delay_value(self, value):
         """Update the delay between mouse movements"""
-        # El valor ya es decimal, lo pasamos directamente
         update_delay(value)
     
     def needs_area_selection(self):
@@ -226,7 +182,7 @@ class MouseTab(QWidget):
         """Return current mouse movement settings"""
         return {
             'speed': self.speed_slider.value(),
-            'delay': self.delay_spinbox.value(),  # Ya en segundos con decimales
+            'delay': self.delay_spinbox.value(),
             'stop_on_move': self.stop_checkbox.isChecked(),
             'mode': 'fullscreen' if self.mode_group.checkedId() == 1 else 'sized',
             'area': self.selected_area

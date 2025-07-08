@@ -1,12 +1,14 @@
 from PyQt6.QtWidgets import QWidget, QApplication, QLabel
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRect
+import pyautogui  # Añadimos esta importación
 
 class AreaSelectorOverlay(QWidget):
     """Overlay transparente para seleccionar un área rectangular en la pantalla"""
     
     # Señal que se emite cuando se selecciona un área
-    areaSelected = pyqtSignal(QRect)
+    # Modificamos para enviar también las coordenadas de PyAutoGUI
+    areaSelected = pyqtSignal(QRect, tuple, tuple)
     selectionCanceled = pyqtSignal()
     
     def __init__(self):
@@ -15,6 +17,7 @@ class AreaSelectorOverlay(QWidget):
         self.start_point = None
         self.current_point = None
         self.is_selecting = False
+        self.start_point_pyautogui = None  # Nueva variable para almacenar coordenadas de PyAutoGUI
         
     def initUI(self):
         # Configurar la ventana para que cubra toda la pantalla
@@ -103,6 +106,8 @@ class AreaSelectorOverlay(QWidget):
             self.start_point = event.pos()
             self.current_point = event.pos()
             self.is_selecting = True
+            # Capturar posición PyAutoGUI al inicio
+            self.start_point_pyautogui = pyautogui.position()
             self.update()
             
     def mouseMoveEvent(self, event):
@@ -121,12 +126,18 @@ class AreaSelectorOverlay(QWidget):
             
             # Validar que el área sea lo suficientemente grande
             if selection_rect.width() > 10 and selection_rect.height() > 10:
+                # Capturar posición final con PyAutoGUI
+                end_point_pyautogui = pyautogui.position()
+                
                 # Emitir señal con el rectángulo en coordenadas de pantalla
+                # Y también las coordenadas PyAutoGUI
                 global_rect = QRect(
                     selection_rect.x(), selection_rect.y(),
                     selection_rect.width(), selection_rect.height()
                 )
-                self.areaSelected.emit(global_rect)
+                
+                # Enviar tanto el rectángulo de Qt como los puntos de PyAutoGUI
+                self.areaSelected.emit(global_rect, self.start_point_pyautogui, end_point_pyautogui)
                 self.close()
             
     def keyPressEvent(self, event):
