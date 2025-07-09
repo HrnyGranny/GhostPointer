@@ -21,7 +21,7 @@ var/
 *.egg
 
 # Archivos de PyInstaller
-*.manifest
+# *.manifest
 *.spec
 
 # Archivos de PyQt
