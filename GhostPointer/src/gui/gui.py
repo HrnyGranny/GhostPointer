@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QFrame)
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QApplication, QFrame)
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIcon, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QRect
 import os
@@ -8,9 +8,9 @@ from src.functions.click import start_auto_click, stop_auto_click, is_clicking
 from src.gui.mouse import MouseTab
 from src.gui.click import ClickTab
 from src.gui.assets import get_icon
-from src.gui.components import CustomTabWidget, IconButton, HelpButton, ContadorLogic
-from src.gui.console import ConsoleOutput
+from src.gui.components import CustomTabWidget, IconButton, HelpButton, ContadorLogic, ConsoleOutput
 from src.gui.styles import get_app_styles
+from src.gui.help import HelpWindow
 
 class GhostPointerGUI(QWidget):
     def __init__(self):
@@ -48,7 +48,7 @@ class GhostPointerGUI(QWidget):
         self.setup_ui()
         self.apply_styles()
         
-        # Conectar la señal del contador a la UI (ahora con verificación)
+        # Conectar la señal del contador a la UI 
         if hasattr(self, 'counter_display') and self.counter_display:
             self.contador_logic.time_changed.connect(self.counter_display.setText)
         
@@ -58,7 +58,7 @@ class GhostPointerGUI(QWidget):
         self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
         self.help_button.clicked.connect(self.show_help)
         
-        # Establecer el icono inicial según la pestaña activa (ahora con verificación)
+        # Establecer el icono inicial según la pestaña activa
         self.update_counter_icon()
         
         # Configurar timer para verificar movimiento manual
@@ -264,9 +264,13 @@ class GhostPointerGUI(QWidget):
 
     def show_help(self):
         """Muestra el diálogo de ayuda"""
-        # Implementaremos esto más adelante
+        help_dialog = HelpWindow(self)
+        
+        # Log in console if in dev mode
         if self.dev_mode:
-            self.console.log("Help button clicked - feature coming soon")
+            self.console.log("Showing help window")
+            
+        help_dialog.exec()
 
     def toggle_dev_mode(self, enabled):
         """Activate or deactivate developer mode"""
@@ -279,11 +283,23 @@ class GhostPointerGUI(QWidget):
             # Reposicionar el botón de ayuda al cambiar el tamaño
             self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
             self.console.show_banner()
+
+            # Reposicionar la ventana cuando se activa el modo desarrollador
+            screen_geometry = QApplication.primaryScreen().geometry()
+            x = (screen_geometry.width() - self.width()) // 2
+            y = int((screen_geometry.height() - self.height()) * 0.3)  
+            self.move(x, y)
         else:
             self.setFixedSize(*self.normal_size)
             # Reposicionar el botón de ayuda al cambiar el tamaño
             self.help_button.setGeometry(self.width() - 40, 16, 24, 24)
             self.console.log("Developer mode deactivated.")
+
+            # También reposicionar cuando se desactiva
+            screen_geometry = QApplication.primaryScreen().geometry()
+            x = (screen_geometry.width() - self.width()) // 2
+            y = int((screen_geometry.height() - self.height()) * 0.4)  
+            self.move(x, y)
 
     def resizeEvent(self, event):
         """Se ejecuta cuando se cambia el tamaño de la ventana"""
