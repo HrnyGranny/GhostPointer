@@ -33,8 +33,9 @@ GhostPointer is a powerful Python application that provides advanced cursor and 
 ### 📸 Screenshots
 
 <div align="center">
-<img src="assets/screenshot1.png" alt="Screenshot 1" width="400">
-<img src="assets/screenshot2.png" alt="Screenshot 2" width="400">
+  <img width="400" height="500" alt="Screenshot 1" src="https://github.com/user-attachments/assets/085bac0a-8192-4d15-9d1c-71eaca7f8dc9" />
+  <img width="400" height="500" alt="image" src="https://github.com/user-attachments/assets/1136d7e7-a025-42a2-9851-113b827eec65" />
+
 </div>
 
 ---
