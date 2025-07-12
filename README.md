@@ -21,14 +21,16 @@
 
 ## 🚀 About
 
-GhostPointer is a powerful Python application that provides advanced cursor and automation capabilities. Built with PyQt6 for a modern, intuitive interface.
+GhostPointer is a powerful Python application that automates mouse movements and clicks to prevent your system from going idle or to maintain "active" status in applications. Built with PyQt6 for a modern, intuitive dark-themed interface.
 
 ### ✨ Key Features
 
-- 🎯 **Precision Control** - Accurate cursor positioning and movement
-- ⚡ **Automation Tools** - Streamlined repetitive tasks
-- 🛡️ **Windows Integration** - Seamless Windows taskbar integration
-- 🎨 **Modern GUI** - Clean, user-friendly interface
+- 🖱️ **Automated Mouse Movement** - Random movement across fullscreen or within a defined area
+- 🔄 **Auto-Clicking** - Configurable left/right clicks at current or selected positions
+- ⚙️ **Customizable Settings** - Adjust speed, delay, and add jitter for realistic simulation
+- 🛑 **Smart Controls** - Option to stop on manual movement, set time or click count limits
+- 🔍 **Developer Mode** - Built-in console for monitoring application activity
+- ⌨️ **Keyboard Shortcuts** - Control the application with convenient hotkeys (Ctrl+Space)
 
 ### 📸 Screenshots
 
@@ -85,12 +87,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 👤 Author
+## 👤 Author & Contributors
 
-**HrnyGranny**
+**Author & Lead Developer:**
+- **HrnyGranny**
+  - GitHub: [HrnyGranny](https://github.com/HrnyGranny)
+  - Web: [HrnyGranny](https://hrnygranny.github.io/)
+  - Project Lead, Design & Development
 
-- GitHub: [HrnyGranny](https://github.com/HrnyGranny)
-- Web:  [HrnyGranny](https://hrnygranny.github.io/)
+**Tester:**
+- **lucciasanchezz**
+  - GitHub: [lucciasanchezz](https://github.com/lucciasanchezz)
+  - Quality Assurance
 
 ---
 
