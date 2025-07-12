@@ -20,7 +20,7 @@ if __name__ == "__main__":
     app.setWindowIcon(app_icon)
 
     window = GhostPointerGUI()
-    window.setWindowTitle("GhostPointer v0.1") 
+    window.setWindowTitle("GhostPointer") 
     window.setWindowIcon(app_icon)  # Configurar el icono también en la ventana
     window.show()
 
