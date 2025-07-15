@@ -202,7 +202,7 @@ class ConsoleOutput(QTextEdit):
         
         # Obtener fecha actual
         current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        version = "1.2.0"
+        version = "1.0.1"
         
         # Banner compacto con colores HTML
         banner = f"""<pre style="color:#6750A4; font-family:'Consolas', 'Courier New'">

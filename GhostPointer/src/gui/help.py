@@ -181,6 +181,6 @@ class HelpWindow(QDialog):
         </div>
         
         <p style="text-align: center; margin-top: 20px; color: #8F8F8F;">
-            Ghost Pointer v1.0.0 — Developed by @HrnyGranny
+            Ghost Pointer v1.0.1 — Developed by @HrnyGranny
         </p>
         """

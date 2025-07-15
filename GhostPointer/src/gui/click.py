@@ -147,6 +147,7 @@ class ClickTab(QWidget):
         self.jitter_checkbox = QCheckBox()
         self.jitter_checkbox.setChecked(False)
         self.jitter_checkbox.stateChanged.connect(self.update_jitter)
+        self.jitter_checkbox.setToolTip("Add random jitter to the click position")
         
         jitter_check_layout.addWidget(jitter_label)
         jitter_check_layout.addWidget(self.jitter_checkbox)
